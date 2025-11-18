@@ -37,3 +37,13 @@ if st.button("Search"):
         st.dataframe(results)
     else:
         st.error("Error: could not fetch results from API")
+
+
+
+st.title("Real Estate AI Assistant")
+
+question = st.text_input("Ask something:")
+
+if st.button("Submit"):
+    response = requests.post("http://localhost:8000/ask", json={"message": question})
+    st.write(response.json()["answer"])

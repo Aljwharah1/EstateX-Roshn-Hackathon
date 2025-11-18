@@ -6,6 +6,10 @@ import pandas as pd
 from app.recommender import RuleBasedRecommender
 from app.model import ForecastModel
 
+from typing import List, Optional
+from app.chatbot import generate_reply
+from .llm import ask_llm
+
 app = FastAPI(title="Real Estate Recommender API")
 
 # ---- Load dataset ----
@@ -45,3 +49,10 @@ def recommend_properties(prefs: UserPrefs):
 @app.get("/")
 def root():
     return {"message": "Real Estate API running"}
+
+
+@app.post("/ask")
+def ask_endpoint(payload: dict):
+    user_message = payload["message"]
+    answer = ask_llm(user_message)
+    return {"answer": answer}
