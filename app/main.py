@@ -8,7 +8,7 @@ from app.model import ForecastModel
 
 from typing import List, Optional
 from app.chatbot import generate_reply
-from .llm import ask_llm
+from app.chatbot import call_llm
 
 app = FastAPI(title="Real Estate Recommender API")
 
@@ -51,8 +51,6 @@ def root():
     return {"message": "Real Estate API running"}
 
 
-@app.post("/ask")
-def ask_endpoint(payload: dict):
-    user_message = payload["message"]
-    answer = ask_llm(user_message)
-    return {"answer": answer}
+@app.post("/ask-ai")
+def ask_ai(payload: dict):
+    return call_llm(payload["query"])
