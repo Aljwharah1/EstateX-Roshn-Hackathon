@@ -1,5 +1,5 @@
 <p align="left">
-  <img src="/Users/aljawharah/EstateX-Roshn-Hackathon/frontend/logo.png" alt="Real Estate Logo" width="100" style="float:left; margin-right:10px;"/>
+  <img src="./static/logo.png" alt="Real Estate Logo" width="100" style="float:left; margin-right:10px;"/>
   <h1 style="display:inline;">🏡 Real-Estate Analytics MVP</h1>
 </p>
 **Machine Learning • Recommendations • Internal LLM • FastAPI • HTML/CSS/JS**
