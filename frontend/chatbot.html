@@ -707,9 +707,8 @@
                     currentRecommendations = recs.slice(0, 5); // Keep top 5
                     
                     if (currentRecommendations.length === 0) {
-                        addMessage("Sorry, no properties found matching your criteria. Please try adjusting your preferences.", 'bot');
-                        // Reset conversation
-                        setTimeout(() => resetConversation(), 2000);
+                        addMessage("❌ Sorry, no properties found matching ALL your criteria.\n\nThis might mean:\n• The specific combination of preferences (location + type + budget) has limited inventory\n• Your budget might be too restrictive for the selected property type in that location\n\nWould you like to:\n1. Adjust your location to any area?\n2. Increase your budget?\n3. Try a different property type?\n4. Start over with new preferences?\n\nJust let me know!", 'bot');
+                        conversationState = 'REFINE_FILTERS';
                     } else {
                         addMessage(`Found ${currentRecommendations.length} properties matching your criteria! Here are my top recommendations:\n`, 'bot');
                         
@@ -761,7 +760,7 @@
                     addMessage("✓ Keeping current results. Feel free to ask more questions about these properties!", 'bot');
                     conversationState = 'DONE';
                 } else {
-                    addMessage(`✓ Sorting by ${selectedPriority.name}...`, 'bot');
+                    addMessage(`✓ Refining by ${selectedPriority.name}...`, 'bot');
                     
                     // Re-sort recommendations
                     if (selectedPriority.key === 'area_sqm') {
@@ -773,6 +772,23 @@
                     } else if (selectedPriority.key === 'price_per_sqm') {
                         currentRecommendations.sort((a, b) => (a.price_per_sqm || Infinity) - (b.price_per_sqm || Infinity));
                         addMessage("Sorted by best investment potential (lowest price/sqm):\n", 'bot');
+                    } else if (selectedPriority.key === 'location') {
+                        // Filter to keep only the requested location, then sort by it
+                        const requestedLocation = userPreferences.location;
+                        const filteredByLocation = currentRecommendations.filter(r => r.location === requestedLocation);
+                        
+                        if (filteredByLocation.length > 0) {
+                            currentRecommendations = filteredByLocation;
+                            addMessage(`Filtered to show only ${requestedLocation} properties:\n`, 'bot');
+                        } else {
+                            addMessage(`No properties found in your selected location (${requestedLocation}). Showing closest alternatives:\n`, 'bot');
+                            // If no exact match, just re-sort by location
+                            currentRecommendations.sort((a, b) => {
+                                if (a.location === requestedLocation) return -1;
+                                if (b.location === requestedLocation) return 1;
+                                return 0;
+                            });
+                        }
                     }
                     
                     // Display re-sorted recommendations

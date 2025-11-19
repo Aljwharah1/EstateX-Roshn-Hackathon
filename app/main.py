@@ -58,17 +58,22 @@ class UserPrefs(BaseModel):
 
 @app.post("/recommend")
 def recommend_properties(prefs: UserPrefs):
+    prefs_dict = prefs.dict()
+    print(f"===ENDPOINT CALLED===")
+    print(f"  location: {prefs_dict.get('location')} (type: {type(prefs_dict.get('location'))})")
+    print(f"  property_type: {prefs_dict.get('property_type')}")
+    print(f"  min_budget: {prefs_dict.get('min_budget')}")
+    print(f"  max_budget: {prefs_dict.get('max_budget')}")
+    
     try:
-        results = recommender.recommend(prefs.dict())
+        results = recommender.recommend(prefs_dict)
+        print(f"===RECOMMENDER RETURNED=== {len(results)} results")
     except Exception as e:
-        # If recommend fails, return empty
+        print(f"Error in recommender: {e}")
         results = pd.DataFrame()
     
-    # If empty after recommend, return top 20 by price_per_sqm
-    if len(results) == 0:
-        results = recommender.df.copy()
-        results = results.dropna(subset=["price_per_sqm"]).sort_values(by="price_per_sqm").head(20)
-    else:
+    # Limit to top 20 - no fallback logic
+    if len(results) > 0:
         results = results.head(20)
 
     if len(results) == 0:
@@ -79,7 +84,7 @@ def recommend_properties(prefs: UserPrefs):
         lambda r: forecast_model.predict_price(r), axis=1
     )
     
-    # Convert to dict, removing rows with None forecast_price for now
+    # Convert to dict
     output = results.to_dict(orient="records")
     return output
 
