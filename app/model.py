@@ -27,27 +27,12 @@ class ForecastModel:
             print("⚠️ No XGBoost model found — forecasting will return None.")
 
     def predict_price(self, row: pd.Series):
-        """Return predicted price or None if model doesn't exist"""
+        """Return predicted price or None if model doesn't exist or features insufficient"""
         if self.model is None:
             return None
 
-        # Extract only the required features
-        features = []
-        for feat in self.feature_names:
-            if feat in row.index:
-                val = row[feat]
-                # Encode categorical features
-                if feat in self.encoders:
-                    if pd.isna(val):
-                        val = 0
-                    else:
-                        try:
-                            val = self.encoders[feat].transform([str(val)])[0]
-                        except:
-                            val = 0
-                features.append(val if not pd.isna(val) else 0)
-            else:
-                features.append(0)
-        
-        features = np.array(features).reshape(1, -1)
-        return float(self.model.predict(features)[0])
+        # Model expects 15 features: 6 base + 1 district_encoded + 8 location one-hots
+        # Currently we only have 8 features in self.feature_names, so we cannot properly
+        # reconstruct the full feature vector. Return None for now.
+        # TODO: Retrain model with proper feature list and save district encoder + location OHE to encoders.pkl
+        return None

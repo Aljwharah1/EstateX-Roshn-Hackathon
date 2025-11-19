@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chatbot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0d3331;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 1200px;
+            height: 90vh;
+            background: #1a1a1a;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid #2a2a2a;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #5dd9c1 0%, #2d8b7e 100%);
+            color: #0d3331;
+            padding: 25px 30px;
+            display: flex;
+            align-items: flex-end; /* bottom-align contents */
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .chat-header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            display: flex;
+            align-items: flex-end; /* align text baseline with logo */
+            gap: 12px;
+        }
+
+        .logo {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: bold;
+            color: #07c08d;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .bot-avatar {
+            width: 45px;
+            height: 45px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: #0d3331;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+            background: #0f0f0f;
+            scroll-behavior: smooth;
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #2a2a2a;
+            border-radius: 4px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #3a3a3a;
+        }
+
+        .message {
+            margin-bottom: 25px;
+            display: flex;
+            gap: 15px;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .user-message {
+            flex-direction: row-reverse;
+        }
+
+        .user-message .message-avatar {
+            background: linear-gradient(135deg, #5dd9c1 0%, #2d8b7e 100%);
+            color: #0d3331;
+        }
+
+        .bot-message .message-avatar {
+            background: #1a1a1a;
+            color: white;
+        }
+
+        .message-content {
+            max-width: 75%;
+            padding: 15px 20px;
+            border-radius: 18px;
+            line-height: 1.6;
+            font-size: 15px;
+        }
+
+        .user-message .message-content {
+            background: linear-gradient(135deg, #5dd9c1 0%, #2d8b7e 100%);
+            color: #0d3331;
+            border-bottom-right-radius: 4px;
+        }
+
+        .bot-message .message-content {
+            background: #2a2a2a;
+            color: #ffffff;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: #666666;
+            margin-top: 5px;
+            padding: 0 5px;
+        }
+
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .typing-indicator.active {
+            display: flex;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+            padding: 15px 20px;
+            background: #2a2a2a;
+            border-radius: 18px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .typing-dots span {
+            width: 8px;
+            height: 8px;
+            background: #5dd9c1;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .chat-input-container {
+            padding: 25px 30px;
+            background: #1a1a1a;
+            border-top: 1px solid #2a2a2a;
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            background: #2a2a2a;
+            border-radius: 25px;
+            padding: 8px 8px 8px 20px;
+            border: 2px solid #3a3a3a;
+            transition: all 0.3s ease;
+        }
+
+        .chat-input-wrapper:focus-within {
+            border-color: #5dd9c1;
+            box-shadow: 0 0 0 3px rgba(93, 217, 193, 0.2);
+        }
+
+        #userInput {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-size: 15px;
+            padding: 10px 5px;
+            outline: none;
+            font-family: inherit;
+            color: #ffffff;
+        }
+
+        #userInput::placeholder {
+            color: #666666;
+        }
+
+        #sendButton {
+            background: linear-gradient(135deg, #5dd9c1 0%, #2d8b7e 100%);
+            color: #0d3331;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        #sendButton:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(93, 217, 193, 0.5);
+        }
+
+        #sendButton:active {
+            transform: scale(0.95);
+        }
+
+        #sendButton:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: scale(1);
+        }
+
+        .welcome-message {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999999;
+        }
+
+        .welcome-message h2 {
+            font-size: 32px;
+            margin-bottom: 15px;
+            color: #ffffff;
+        }
+
+        .welcome-message p {
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+
+        .suggestions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .suggestion-card {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid #3a3a3a;
+        }
+
+        .suggestion-card:hover {
+            border-color: #5dd9c1;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(93, 217, 193, 0.3);
+        }
+
+        .suggestion-card h3 {
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: #ffffff;
+        }
+
+        .suggestion-card p {
+            font-size: 13px;
+            color: #999999;
+        }
+
+        @media (max-width: 768px) {
+            .chat-container {
+                height: 100vh;
+                border-radius: 0;
+            }
+
+            .message-content {
+                max-width: 85%;
+            }
+
+            .suggestions {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>
+                <img src="logo.png" alt="EstateX Logo" style="height: 80px; width: auto;">
+                EstateX Advisor
+            </h1>
+            <div class="status">
+                <div class="status-dot"></div>
+                Online
+            </div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="welcome-message">
+                <h2>Welcome to EstateX Advisor</h2>
+                <p>Your intelligent assistant for real estate consultation and advice</p>
+                <div class="suggestions">
+                    <div class="suggestion-card" onclick="sendSuggestion('What are the best investment opportunities in real estate?')">
+                        <h3>Investment Opportunities</h3>
+                        <p>Discover the best real estate investments</p>
+                    </div>
+                    <div class="suggestion-card" onclick="sendSuggestion('How do I evaluate a property before buying?')">
+                        <h3>Property Evaluation</h3>
+                        <p>Learn how to assess property value</p>
+                    </div>
+                    <div class="suggestion-card" onclick="sendSuggestion('What are current market trends?')">
+                        <h3>Market Trends</h3>
+                        <p>Get insights on real estate market trends</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="typing-indicator" id="typingIndicator">
+                <div class="message-avatar" style="background: #1a1a1a; color: white;"></div>
+                <div class="typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-input-container">
+            <div class="chat-input-wrapper">
+                <input 
+                    type="text" 
+                    id="userInput" 
+                    placeholder="Type your message here..."
+                    autocomplete="off"
+                >
+                <button id="sendButton" onclick="sendMessage()">▲</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chatMessages');
+        const userInput = document.getElementById('userInput');
+        const sendButton = document.getElementById('sendButton');
+        const typingIndicator = document.getElementById('typingIndicator');
+
+        // Automatic bot responses - WILL BE REPLACED WITH BACKEND API
+        const botResponses = {
+            'hello': 'Hello! How can I help you with your real estate needs today?',
+            'hi': 'Hi there! How can I assist you with property matters?',
+            'how are you': 'I\'m doing great, thanks for asking! How can I help you with real estate?',
+            'what is your name': 'I\'m EstateX Advisor, your intelligent real estate assistant.',
+            'thanks': 'You\'re welcome! Happy to help with your real estate needs.',
+            'thank you': 'You\'re welcome! Feel free to ask anything about real estate.',
+            'default': 'I\'m here to help with real estate consultation. What would you like to know?'
+        };
+
+        // Add listener for Enter key
+        userInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        function sendMessage() {
+            const message = userInput.value.trim();
+            
+            if (message === '') return;
+
+            // Hide welcome message
+            const welcomeMsg = document.querySelector('.welcome-message');
+            if (welcomeMsg) {
+                welcomeMsg.style.display = 'none';
+            }
+
+            // Add user message
+            addMessage(message, 'user');
+            
+            // Clear input field
+            userInput.value = '';
+            
+            // Disable send button and show typing indicator
+            sendButton.disabled = true;
+            typingIndicator.classList.add('active');
+            
+                // Call backend LLM endpoint
+                (async () => {
+                    try {
+                        const res = await fetch('/ask', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({message})
+                        });
+
+                        if (!res.ok) throw new Error('API error');
+                        const payload = await res.json();
+                        const answer = payload.answer ?? 'Sorry, no answer.';
+                        addMessage(answer, 'bot');
+
+                        // If user asked for recommendations, fetch them as well
+                        const lower = message.toLowerCase();
+                        if (lower.includes('recommend') || lower.includes('recommendation') || lower.includes('suggest')) {
+                            const recRes = await fetch('/recommend', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({})
+                            });
+                            if (recRes.ok) {
+                                const recs = await recRes.json();
+                                if (Array.isArray(recs) && recs.length) {
+                                    addMessage('Here are some recommendations:', 'bot');
+                                    // show top 5 as bullets
+                                    const list = recs.slice(0,5).map(r => `${r.property_type || ''} in ${r.location || r.district || ''} — ${r.price_per_sqm ? Math.round(r.price_per_sqm) + ' SAR/sqm' : ''}`);
+                                    addMessage(list.join('\n'), 'bot');
+                                } else {
+                                    addMessage('No recommendations found.', 'bot');
+                                }
+                            }
+                        }
+
+                    } catch (err) {
+                        addMessage('Error contacting backend: ' + err.message, 'bot');
+                    } finally {
+                        typingIndicator.classList.remove('active');
+                        sendButton.disabled = false;
+                        userInput.focus();
+                    }
+                })();
+        }
+
+        function sendSuggestion(text) {
+            userInput.value = text;
+            sendMessage();
+        }
+
+        function addMessage(text, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}-message`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = type === 'user' ? '' : '';
+            avatar.style.background = type === 'user' ? 'linear-gradient(135deg, #5dd9c1 0%, #2d8b7e 100%)' : '#1a1a1a';
+            avatar.style.color = type === 'user' ? '#0d3331' : 'white';
+            
+            const contentWrapper = document.createElement('div');
+            
+            const content = document.createElement('div');
+            content.className = 'message-content';
+            content.textContent = text;
+            
+            const time = document.createElement('div');
+            time.className = 'message-time';
+            time.textContent = getCurrentTime();
+            
+            contentWrapper.appendChild(content);
+            contentWrapper.appendChild(time);
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(contentWrapper);
+            
+            chatMessages.insertBefore(messageDiv, typingIndicator);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function getBotResponse(message) {
+            const lowerMessage = message.toLowerCase();
+            
+            for (let key in botResponses) {
+                if (lowerMessage.includes(key)) {
+                    return botResponses[key];
+                }
+            }
+            
+            // Smart responses based on real estate keywords
+            if (lowerMessage.includes('invest') || lowerMessage.includes('investment')) {
+                return 'Real estate investment can be very profitable. I can help you understand market trends, property valuations, and investment strategies. What specific aspect are you interested in?';
+            }
+            
+            if (lowerMessage.includes('buy') || lowerMessage.includes('purchase') || lowerMessage.includes('property')) {
+                return 'When buying a property, it\'s important to consider location, market value, legal aspects, and future potential. What type of property are you looking for?';
+            }
+            
+            if (lowerMessage.includes('price') || lowerMessage.includes('value') || lowerMessage.includes('cost')) {
+                return 'Property pricing depends on many factors including location, size, condition, and market trends. I can help you evaluate property values. Tell me more about what you\'re looking for.';
+            }
+            
+            if (lowerMessage.includes('market') || lowerMessage.includes('trend')) {
+                return 'The real estate market is constantly evolving. I can provide insights on current trends, future predictions, and market analysis. What area or aspect are you interested in?';
+            }
+            
+            if (lowerMessage.includes('help')) {
+                return 'Of course! I\'m here to assist with all your real estate questions - from buying and selling to investments and market analysis. What do you need help with?';
+            }
+            
+            return botResponses.default;
+        }
+
+        function getCurrentTime() {
+            const now = new Date();
+            return now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // Focus on input field when page loads
+        window.onload = function() {
+            userInput.focus();
+        };
+    </script>
+</body>
+</html>

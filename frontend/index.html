@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EstateX Advisor - Your Smart Real Estate Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a1614;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .landing-container {
+            text-align: center;
+            padding: 40px;
+            animation: fadeIn 1s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo-container {
+            margin-bottom: 40px;
+            animation: logoFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes logoFloat {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .logo-container img {
+            width: 280px;
+            height: auto;
+            filter: drop-shadow(0 10px 30px rgba(93, 217, 193, 0.4));
+        }
+
+        h1 {
+            color: #5dd9c1;
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px rgba(93, 217, 193, 0.4);
+        }
+
+        .subtitle {
+            color: #ffffff;
+            font-size: 24px;
+            font-weight: 400;
+            margin-bottom: 50px;
+            opacity: 0.9;
+        }
+
+        .start-button {
+            background: linear-gradient(135deg, #5dd9c1 0%, #2d8b7e 100%);
+            color: #0d3331;
+            border: none;
+            padding: 18px 60px;
+            font-size: 20px;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(93, 217, 193, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .start-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(93, 217, 193, 0.6);
+        }
+
+        .start-button:active {
+            transform: translateY(-1px);
+        }
+
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            background: #5dd9c1;
+            opacity: 0.15;
+            animation: float 20s infinite;
+        }
+
+        .particle.house {
+            width: 60px;
+            height: 60px;
+            clip-path: polygon(50% 0%, 100% 35%, 100% 100%, 0% 100%, 0% 35%);
+        }
+
+        .particle.building {
+            width: 40px;
+            height: 80px;
+            border-radius: 5px;
+        }
+
+        .particle.land {
+            width: 80px;
+            height: 50px;
+            border-radius: 8px;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0) translateX(0);
+            }
+            25% {
+                transform: translateY(-100px) translateX(100px);
+            }
+            50% {
+                transform: translateY(-200px) translateX(-100px);
+            }
+            75% {
+                transform: translateY(-100px) translateX(-150px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="particles" id="particles"></div>
+    
+    <div class="landing-container">
+        <div class="logo-container">
+            <img src="logo.png" alt="EstateX Advisor Logo">
+        </div>
+        <h1>Welcome to Your Smart Real Estate Advisor</h1>
+        <p class="subtitle">Where real estate meets intelligence</p>
+        <button class="start-button" onclick="startChat()">Start</button>
+    </div>
+
+    <script>
+        // Create particles with real estate shapes
+        const particlesContainer = document.getElementById('particles');
+        const shapes = ['house', 'building', 'land'];
+        for (let i = 0; i < 15; i++) {
+            const particle = document.createElement('div');
+            const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
+            particle.className = `particle ${randomShape}`;
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.top = Math.random() * 100 + '%';
+            particle.style.animationDelay = Math.random() * 20 + 's';
+            particlesContainer.appendChild(particle);
+        }
+
+        function startChat() {
+            window.location.href = 'chatbot.html';
+        }
+    </script>
+</body>
+</html>

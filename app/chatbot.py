@@ -2,13 +2,20 @@
 
 import os
 from openai import OpenAI
-from app.model import predict_price
-from app.recommender import recommend_properties
+from app.model import ForecastModel
+from app.recommender import RuleBasedRecommender
 from dotenv import load_dotenv
+import pandas as pd
 
 load_dotenv()
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# Load dataset and create instances for use by the LLM functions
+DATA_PATH = "data/Finalized_Data.xlsx"
+_df = pd.read_excel(DATA_PATH)
+_recommender = RuleBasedRecommender(_df)
+_forecaster = ForecastModel("models/xgb_model.json", "models/encoders.pkl")
 
 SYSTEM_PROMPT = """
 You are EstateX Advisor’s AI assistant.
@@ -77,9 +84,15 @@ def call_llm(user_message: str):
         args = eval(fn.arguments)
 
         if name == "predict_price":
-            result = predict_price(args)
+            # args is a dict of the feature values
+            series = pd.Series(args)
+            pred = _forecaster.predict_price(series)
+            result = {"price_per_sqm": pred}
         elif name == "recommend_properties":
-            result = recommend_properties(args).to_dict(orient="records")
+            # args may contain filtering prefs
+            prefs = args if isinstance(args, dict) else {}
+            recs = _recommender.recommend(prefs)
+            result = recs.to_dict(orient="records")
         else:
             result = {"error": "Unknown function"}
 
