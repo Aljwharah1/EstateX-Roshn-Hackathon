@@ -489,23 +489,36 @@
                         const answer = payload.answer ?? 'Sorry, no answer.';
                         addMessage(answer, 'bot');
 
-                        // If user asked for recommendations, fetch them as well
+                        // Detect if user is looking for properties (buy, apartment, villa, house, etc.)
                         const lower = message.toLowerCase();
-                        if (lower.includes('recommend') || lower.includes('recommendation') || lower.includes('suggest')) {
+                        const isPropertySearch = /\b(buy|want|looking|find|apartment|villa|house|property|properties|flat|studio|penthouse|townhouse|investment|rent|lease)\b/.test(lower);
+                        const isRecommendation = /\b(recommend|suggestion|suggest|idea|option|choice)\b/.test(lower);
+                        
+                        if (isPropertySearch || isRecommendation) {
+                            // Extract preferences from message
+                            const prefs = parseUserPreferences(message);
+                            
                             const recRes = await fetch('/recommend', {
                                 method: 'POST',
                                 headers: {'Content-Type': 'application/json'},
-                                body: JSON.stringify({})
+                                body: JSON.stringify(prefs)
                             });
+                            
                             if (recRes.ok) {
                                 const recs = await recRes.json();
                                 if (Array.isArray(recs) && recs.length) {
-                                    addMessage('Here are some recommendations:', 'bot');
-                                    // show top 5 as bullets
-                                    const list = recs.slice(0,5).map(r => `${r.property_type || ''} in ${r.location || r.district || ''} — ${r.price_per_sqm ? Math.round(r.price_per_sqm) + ' SAR/sqm' : ''}`);
+                                    addMessage(`Found ${recs.length} properties matching your criteria. Here are the top recommendations:`, 'bot');
+                                    // Show top 5 as formatted list
+                                    const list = recs.slice(0, 5).map((r, idx) => {
+                                        const type = r.property_type || 'Property';
+                                        const location = r.location || r.district || 'Unknown Location';
+                                        const price = r.price_sar ? `SAR ${r.price_sar.toLocaleString()}` : 'Price N/A';
+                                        const priceSqm = r.price_per_sqm ? `(${Math.round(r.price_per_sqm)} SAR/sqm)` : '';
+                                        return `${idx + 1}. ${type} in ${location} - ${price} ${priceSqm}`;
+                                    });
                                     addMessage(list.join('\n'), 'bot');
                                 } else {
-                                    addMessage('No recommendations found.', 'bot');
+                                    addMessage('Sorry, no properties found matching your criteria. Could you provide more details about what you\'re looking for?', 'bot');
                                 }
                             }
                         }
@@ -518,6 +531,65 @@
                         userInput.focus();
                     }
                 })();
+        }
+        
+        function parseUserPreferences(message) {
+            // Extract property type
+            const propertyTypes = ['apartment', 'villa', 'house', 'flat', 'studio', 'penthouse', 'townhouse'];
+            const prefs = {};
+            
+            for (let type of propertyTypes) {
+                if (message.toLowerCase().includes(type)) {
+                    prefs.property_type = [type];
+                    break;
+                }
+            }
+            
+            // Extract location/direction keywords - these match the Arabic location data
+            // Data has: غرب (west), شرق (east), جنوب (south), شمال (north), وسط (center), etc.
+            const locationKeywords = {
+                'west': 'غرب',
+                'east': 'شرق',
+                'north': 'شمال',
+                'south': 'جنوب',
+                'center': 'وسط',
+                'central': 'وسط'
+            };
+            
+            for (let keyword in locationKeywords) {
+                if (message.toLowerCase().includes(keyword)) {
+                    prefs.location = [locationKeywords[keyword]];
+                    break;
+                }
+            }
+            
+            // Extract budget if mentioned
+            const budgetMatch = message.match(/(\d{1,3}(?:\s*,?\s*\d{3})*)\s*(?:sar|sr|million|m|k|thousand)?/i);
+            if (budgetMatch) {
+                const amount = parseInt(budgetMatch[1].replace(/\s|,/g, ''));
+                if (message.toLowerCase().includes('million') || message.toLowerCase().includes('m')) {
+                    prefs.min_budget = amount * 1000000;
+                    prefs.max_budget = amount * 1000000 + 3000000;
+                } else if (message.toLowerCase().includes('k') || message.toLowerCase().includes('thousand')) {
+                    prefs.min_budget = amount * 1000;
+                    prefs.max_budget = amount * 1000 + 1000000;
+                } else if (amount > 100000) {
+                    // Likely in SAR
+                    prefs.min_budget = Math.max(amount - 500000, 0);
+                    prefs.max_budget = amount + 500000;
+                }
+            }
+            
+            // Extract goal (investment vs residential)
+            if (message.toLowerCase().includes('investment') || message.toLowerCase().includes('invest')) {
+                prefs.goal = 'investment';
+            } else if (message.toLowerCase().includes('live') || message.toLowerCase().includes('residential') || message.toLowerCase().includes('living')) {
+                prefs.goal = 'residential';
+            } else {
+                prefs.goal = 'investment'; // default
+            }
+            
+            return prefs;
         }
 
         function sendSuggestion(text) {
