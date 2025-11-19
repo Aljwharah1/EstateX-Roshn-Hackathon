@@ -388,25 +388,6 @@
         </div>
 
         <div class="chat-messages" id="chatMessages">
-            <div class="welcome-message">
-                <h2>Welcome to EstateX Advisor</h2>
-                <p>Your intelligent assistant for real estate consultation and advice</p>
-                <div class="suggestions">
-                    <div class="suggestion-card" onclick="sendSuggestion('What are the best investment opportunities in real estate?')">
-                        <h3>Investment Opportunities</h3>
-                        <p>Discover the best real estate investments</p>
-                    </div>
-                    <div class="suggestion-card" onclick="sendSuggestion('How do I evaluate a property before buying?')">
-                        <h3>Property Evaluation</h3>
-                        <p>Learn how to assess property value</p>
-                    </div>
-                    <div class="suggestion-card" onclick="sendSuggestion('What are current market trends?')">
-                        <h3>Market Trends</h3>
-                        <p>Get insights on real estate market trends</p>
-                    </div>
-                </div>
-            </div>
-
             <div class="typing-indicator" id="typingIndicator">
                 <div class="message-avatar" style="background: #1a1a1a; color: white;"></div>
                 <div class="typing-dots">
@@ -436,15 +417,93 @@
         const sendButton = document.getElementById('sendButton');
         const typingIndicator = document.getElementById('typingIndicator');
 
-        // Automatic bot responses - WILL BE REPLACED WITH BACKEND API
-        const botResponses = {
-            'hello': 'Hello! How can I help you with your real estate needs today?',
-            'hi': 'Hi there! How can I assist you with property matters?',
-            'how are you': 'I\'m doing great, thanks for asking! How can I help you with real estate?',
-            'what is your name': 'I\'m EstateX Advisor, your intelligent real estate assistant.',
-            'thanks': 'You\'re welcome! Happy to help with your real estate needs.',
-            'thank you': 'You\'re welcome! Feel free to ask anything about real estate.',
-            'default': 'I\'m here to help with real estate consultation. What would you like to know?'
+        // Conversation state management
+        let conversationState = 'GREETING'; // GREETING → GOAL → PROPERTY_CLASS → PROPERTY_TYPE → LOCATION → BUDGET → RECOMMENDATIONS → PRIORITY
+        let userPreferences = {
+            goal: null,
+            property_class: null,
+            property_type: null,
+            location: null,
+            budget: null
+        };
+        let currentRecommendations = [];
+
+        // Question templates for each stage
+        const questions = {
+            GOAL: {
+                text: "What is your primary goal?",
+                options: [
+                    "🏠 Buying for personal residence",
+                    "💼 Long-term investment",
+                    "🤝 Renting to others",
+                    "📊 Short-term investment/resale",
+                    "🏗️ Buying land for development"
+                ],
+                values: ["buying_personal", "long_term_investment", "renting", "short_term_investment", "buying_land"]
+            },
+            PROPERTY_CLASS: {
+                text: "What type of property class interests you?",
+                options: [
+                    "🏘️ Residential",
+                    "🏢 Commercial",
+                    "🌾 Agriculture"
+                ],
+                values: ["residential", "commercial", "agriculture"]
+            },
+            PROPERTY_TYPE: {
+                text: "What type of property are you looking for?",
+                options: [
+                    "🏢 Apartment",
+                    "🏠 Villa",
+                    "🏘️ Townhouse",
+                    "🏗️ Building",
+                    "🛖 Studio"
+                ],
+                values: ["apartment", "villa", "townhouse", "building", "studio"]
+            },
+            LOCATION: {
+                text: "Which area of Riyadh interests you?",
+                options: [
+                    "⬅️ West (غرب)",
+                    "➡️ East (شرق)",
+                    "⬆️ North (شمال)",
+                    "⬇️ South (جنوب)",
+                    "🎯 Center (وسط)",
+                    "↖️ Northwest (شمال غرب)",
+                    "↗️ Northeast (شمال شرق)",
+                    "↙️ Southwest (جنوب غرب)"
+                ],
+                values: ["غرب", "شرق", "شمال", "جنوب", "وسط", "شمال غرب", "شمال شرق", "جنوب غرب"]
+            },
+            BUDGET: {
+                text: "What is your budget range in SAR?",
+                options: [
+                    "💰 Under 500,000",
+                    "💵 500k - 1M",
+                    "💳 1M - 2M",
+                    "💎 2M - 5M",
+                    "👑 5M+"
+                ],
+                values: [
+                    { min: 0, max: 500000 },
+                    { min: 500000, max: 1000000 },
+                    { min: 1000000, max: 2000000 },
+                    { min: 2000000, max: 5000000 },
+                    { min: 5000000, max: Infinity }
+                ]
+            }
+        };
+
+        // Location to Arabic mapping
+        const locationMapping = {
+            "غرب": "غرب",
+            "شرق": "شرق",
+            "شمال": "شمال",
+            "جنوب": "جنوب",
+            "وسط": "وسط",
+            "شمال غرب": "شمال غرب",
+            "شمال شرق": "شمال شرق",
+            "جنوب غرب": "جنوب غرب"
         };
 
         // Add listener for Enter key
@@ -475,9 +534,15 @@
             sendButton.disabled = true;
             typingIndicator.classList.add('active');
             
-                // Call backend LLM endpoint
-                (async () => {
-                    try {
+            handleUserInput(message);
+        }
+
+        function handleUserInput(message) {
+            (async () => {
+                try {
+                    // Route message based on conversation state
+                    if (conversationState === 'GREETING') {
+                        // First, greet the user
                         const res = await fetch('/ask', {
                             method: 'POST',
                             headers: {'Content-Type': 'application/json'},
@@ -486,115 +551,254 @@
 
                         if (!res.ok) throw new Error('API error');
                         const payload = await res.json();
-                        const answer = payload.answer ?? 'Sorry, no answer.';
-                        addMessage(answer, 'bot');
-
-                        // Detect if user is looking for properties (buy, apartment, villa, house, etc.)
-                        const lower = message.toLowerCase();
-                        const isPropertySearch = /\b(buy|want|looking|find|apartment|villa|house|property|properties|flat|studio|penthouse|townhouse|investment|rent|lease)\b/.test(lower);
-                        const isRecommendation = /\b(recommend|suggestion|suggest|idea|option|choice)\b/.test(lower);
+                        addMessage(payload.answer, 'bot');
                         
-                        if (isPropertySearch || isRecommendation) {
-                            // Extract preferences from message
-                            const prefs = parseUserPreferences(message);
-                            
-                            const recRes = await fetch('/recommend', {
-                                method: 'POST',
-                                headers: {'Content-Type': 'application/json'},
-                                body: JSON.stringify(prefs)
-                            });
-                            
-                            if (recRes.ok) {
-                                const recs = await recRes.json();
-                                if (Array.isArray(recs) && recs.length) {
-                                    addMessage(`Found ${recs.length} properties matching your criteria. Here are the top recommendations:`, 'bot');
-                                    // Show top 5 as formatted list
-                                    const list = recs.slice(0, 5).map((r, idx) => {
-                                        const type = r.property_type || 'Property';
-                                        const location = r.location || r.district || 'Unknown Location';
-                                        const price = r.price_sar ? `SAR ${r.price_sar.toLocaleString()}` : 'Price N/A';
-                                        const priceSqm = r.price_per_sqm ? `(${Math.round(r.price_per_sqm)} SAR/sqm)` : '';
-                                        return `${idx + 1}. ${type} in ${location} - ${price} ${priceSqm}`;
-                                    });
-                                    addMessage(list.join('\n'), 'bot');
-                                } else {
-                                    addMessage('Sorry, no properties found matching your criteria. Could you provide more details about what you\'re looking for?', 'bot');
-                                }
-                            }
-                        }
+                        // Then transition to asking for goal
+                        conversationState = 'GOAL';
+                        setTimeout(() => showQuestion('GOAL'), 1000);
 
-                    } catch (err) {
-                        addMessage('Error contacting backend: ' + err.message, 'bot');
-                    } finally {
-                        typingIndicator.classList.remove('active');
-                        sendButton.disabled = false;
-                        userInput.focus();
+                    } else if (conversationState === 'GOAL') {
+                        handleMultiChoiceInput(message, 'GOAL', 'PROPERTY_CLASS');
+                    } else if (conversationState === 'PROPERTY_CLASS') {
+                        handleMultiChoiceInput(message, 'PROPERTY_CLASS', 'PROPERTY_TYPE');
+                    } else if (conversationState === 'PROPERTY_TYPE') {
+                        handleMultiChoiceInput(message, 'PROPERTY_TYPE', 'LOCATION');
+                    } else if (conversationState === 'LOCATION') {
+                        handleMultiChoiceInput(message, 'LOCATION', 'BUDGET');
+                    } else if (conversationState === 'BUDGET') {
+                        handleBudgetInput(message);
+                    } else if (conversationState === 'RECOMMENDATIONS') {
+                        handleRecommendationChoice(message);
+                    } else if (conversationState === 'PRIORITY') {
+                        handlePriorityInput(message);
                     }
-                })();
-        }
-        
-        function parseUserPreferences(message) {
-            // Extract property type
-            const propertyTypes = ['apartment', 'villa', 'house', 'flat', 'studio', 'penthouse', 'townhouse'];
-            const prefs = {};
-            
-            for (let type of propertyTypes) {
-                if (message.toLowerCase().includes(type)) {
-                    prefs.property_type = [type];
-                    break;
+
+                } catch (err) {
+                    addMessage('Error: ' + err.message, 'bot');
+                } finally {
+                    typingIndicator.classList.remove('active');
+                    sendButton.disabled = false;
+                    userInput.focus();
                 }
-            }
-            
-            // Extract location/direction keywords - these match the Arabic location data
-            // Data has: غرب (west), شرق (east), جنوب (south), شمال (north), وسط (center), etc.
-            const locationKeywords = {
-                'west': 'غرب',
-                'east': 'شرق',
-                'north': 'شمال',
-                'south': 'جنوب',
-                'center': 'وسط',
-                'central': 'وسط'
-            };
-            
-            for (let keyword in locationKeywords) {
-                if (message.toLowerCase().includes(keyword)) {
-                    prefs.location = [locationKeywords[keyword]];
-                    break;
-                }
-            }
-            
-            // Extract budget if mentioned
-            const budgetMatch = message.match(/(\d{1,3}(?:\s*,?\s*\d{3})*)\s*(?:sar|sr|million|m|k|thousand)?/i);
-            if (budgetMatch) {
-                const amount = parseInt(budgetMatch[1].replace(/\s|,/g, ''));
-                if (message.toLowerCase().includes('million') || message.toLowerCase().includes('m')) {
-                    prefs.min_budget = amount * 1000000;
-                    prefs.max_budget = amount * 1000000 + 3000000;
-                } else if (message.toLowerCase().includes('k') || message.toLowerCase().includes('thousand')) {
-                    prefs.min_budget = amount * 1000;
-                    prefs.max_budget = amount * 1000 + 1000000;
-                } else if (amount > 100000) {
-                    // Likely in SAR
-                    prefs.min_budget = Math.max(amount - 500000, 0);
-                    prefs.max_budget = amount + 500000;
-                }
-            }
-            
-            // Extract goal (investment vs residential)
-            if (message.toLowerCase().includes('investment') || message.toLowerCase().includes('invest')) {
-                prefs.goal = 'investment';
-            } else if (message.toLowerCase().includes('live') || message.toLowerCase().includes('residential') || message.toLowerCase().includes('living')) {
-                prefs.goal = 'residential';
-            } else {
-                prefs.goal = 'investment'; // default
-            }
-            
-            return prefs;
+            })();
         }
 
-        function sendSuggestion(text) {
-            userInput.value = text;
-            sendMessage();
+        function handleMultiChoiceInput(message, currentStage, nextStage) {
+            const question = questions[currentStage];
+            const input = message.toLowerCase().trim();
+            
+            // Try to match user input to options (by number or text match)
+            let selectedIndex = -1;
+            
+            // Check if user entered a number (1-5)
+            if (/^[1-5]$/.test(input)) {
+                selectedIndex = parseInt(input) - 1;
+            } else {
+                // Try to match text
+                for (let i = 0; i < question.options.length; i++) {
+                    if (question.options[i].toLowerCase().includes(input)) {
+                        selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+            
+            if (selectedIndex >= 0 && selectedIndex < question.options.length) {
+                // Valid selection
+                const fieldName = currentStage.split('_')[0].toLowerCase();
+                const mapFieldName = {
+                    'goal': 'goal',
+                    'property': currentStage === 'PROPERTY_CLASS' ? 'property_class' : 'property_type',
+                    'location': 'location'
+                };
+                
+                const field = currentStage === 'PROPERTY_CLASS' ? 'property_class' : 
+                             currentStage === 'PROPERTY_TYPE' ? 'property_type' :
+                             currentStage === 'GOAL' ? 'goal' :
+                             currentStage === 'LOCATION' ? 'location' : null;
+                
+                userPreferences[field] = question.values[selectedIndex];
+                
+                addMessage(`✓ Selected: ${question.options[selectedIndex]}`, 'bot');
+                
+                // Move to next stage
+                conversationState = nextStage;
+                setTimeout(() => showQuestion(nextStage), 800);
+            } else {
+                addMessage("I didn't understand that. Please enter the number (1-5) or a keyword from the options.", 'bot');
+            }
+        }
+
+        function handleBudgetInput(message) {
+            const budgetQuestion = questions['BUDGET'];
+            const input = message.toLowerCase().trim();
+            
+            let selectedIndex = -1;
+            
+            // Check if user entered a number (1-5)
+            if (/^[1-5]$/.test(input)) {
+                selectedIndex = parseInt(input) - 1;
+            } else {
+                // Try to match text
+                for (let i = 0; i < budgetQuestion.options.length; i++) {
+                    if (budgetQuestion.options[i].toLowerCase().includes(input)) {
+                        selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+            
+            if (selectedIndex >= 0 && selectedIndex < budgetQuestion.options.length) {
+                userPreferences.budget = budgetQuestion.values[selectedIndex];
+                addMessage(`✓ Selected: ${budgetQuestion.options[selectedIndex]}`, 'bot');
+                
+                // Now fetch recommendations
+                conversationState = 'RECOMMENDATIONS';
+                setTimeout(() => fetchRecommendations(), 800);
+            } else {
+                addMessage("I didn't understand that. Please enter the number (1-5) or a keyword.", 'bot');
+            }
+        }
+
+        function showQuestion(stage) {
+            const question = questions[stage];
+            addMessage(question.text, 'bot');
+            
+            // Show options
+            const optionsText = question.options.map((opt, idx) => `${idx + 1}. ${opt}`).join('\n');
+            addMessage(optionsText, 'bot');
+        }
+
+        function fetchRecommendations() {
+            (async () => {
+                try {
+                    // Build request body with user preferences
+                    const requestBody = {};
+                    
+                    if (userPreferences.property_type) {
+                        requestBody.property_type = [userPreferences.property_type];
+                    }
+                    
+                    if (userPreferences.location) {
+                        requestBody.location = [userPreferences.location];
+                    }
+                    
+                    if (userPreferences.budget) {
+                        requestBody.min_budget = userPreferences.budget.min;
+                        requestBody.max_budget = userPreferences.budget.max;
+                    }
+                    
+                    // Set goal based on user preference
+                    if (userPreferences.goal === 'long_term_investment' || userPreferences.goal === 'short_term_investment') {
+                        requestBody.goal = 'investment';
+                    } else {
+                        requestBody.goal = 'residential';
+                    }
+                    
+                    const res = await fetch('/recommend', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(requestBody)
+                    });
+                    
+                    if (!res.ok) throw new Error('Failed to fetch recommendations');
+                    
+                    const recs = await res.json();
+                    currentRecommendations = recs.slice(0, 5); // Keep top 5
+                    
+                    if (currentRecommendations.length === 0) {
+                        addMessage("Sorry, no properties found matching your criteria. Please try adjusting your preferences.", 'bot');
+                        // Reset conversation
+                        setTimeout(() => resetConversation(), 2000);
+                    } else {
+                        addMessage(`Found ${currentRecommendations.length} properties matching your criteria! Here are my top recommendations:\n`, 'bot');
+                        
+                        // Display recommendations
+                        const recText = currentRecommendations.map((r, idx) => {
+                            return `${idx + 1}. ${r.property_type || 'Property'} in ${r.district || 'Unknown'}\n   Location: ${r.location || 'N/A'} | Price: SAR ${r.price_sar ? r.price_sar.toLocaleString() : 'N/A'}\n   Area: ${r.area_sqm || 'N/A'} sqm | Price/sqm: ${r.price_per_sqm ? Math.round(r.price_per_sqm) : 'N/A'} SAR`;
+                        }).join('\n\n');
+                        
+                        addMessage(recText, 'bot');
+                        
+                        // Ask if they want to refine by priority
+                        if (currentRecommendations.length > 1) {
+                            conversationState = 'PRIORITY';
+                            setTimeout(() => {
+                                addMessage("Would you like to refine these results? Choose a priority:\n1. Larger area (sqm)\n2. More affordable\n3. Best location\n4. Best investment potential\n5. Keep current results", 'bot');
+                            }, 500);
+                        }
+                    }
+                } catch (err) {
+                    addMessage('Error fetching recommendations: ' + err.message, 'bot');
+                } finally {
+                    typingIndicator.classList.remove('active');
+                    sendButton.disabled = false;
+                    userInput.focus();
+                }
+            })();
+        }
+
+        function handlePriorityInput(message) {
+            const input = message.toLowerCase().trim();
+            const priorities = [
+                { num: '1', name: 'area', key: 'area_sqm' },
+                { num: '2', name: 'affordable', key: 'price_sar' },
+                { num: '3', name: 'location', key: 'location' },
+                { num: '4', name: 'investment', key: 'price_per_sqm' },
+                { num: '5', name: 'keep', key: null }
+            ];
+            
+            let selectedPriority = null;
+            for (let p of priorities) {
+                if (input === p.num || input.includes(p.name)) {
+                    selectedPriority = p;
+                    break;
+                }
+            }
+            
+            if (selectedPriority) {
+                if (selectedPriority.num === '5') {
+                    addMessage("✓ Keeping current results. Feel free to ask more questions about these properties!", 'bot');
+                    conversationState = 'DONE';
+                } else {
+                    addMessage(`✓ Sorting by ${selectedPriority.name}...`, 'bot');
+                    
+                    // Re-sort recommendations
+                    if (selectedPriority.key === 'area_sqm') {
+                        currentRecommendations.sort((a, b) => (b.area_sqm || 0) - (a.area_sqm || 0));
+                        addMessage("Sorted by largest area:\n", 'bot');
+                    } else if (selectedPriority.key === 'price_sar') {
+                        currentRecommendations.sort((a, b) => (a.price_sar || Infinity) - (b.price_sar || Infinity));
+                        addMessage("Sorted by most affordable:\n", 'bot');
+                    } else if (selectedPriority.key === 'price_per_sqm') {
+                        currentRecommendations.sort((a, b) => (a.price_per_sqm || Infinity) - (b.price_per_sqm || Infinity));
+                        addMessage("Sorted by best investment potential (lowest price/sqm):\n", 'bot');
+                    }
+                    
+                    // Display re-sorted recommendations
+                    const recText = currentRecommendations.slice(0, 5).map((r, idx) => {
+                        return `${idx + 1}. ${r.property_type || 'Property'} in ${r.district || 'Unknown'}\n   Location: ${r.location || 'N/A'} | Price: SAR ${r.price_sar ? r.price_sar.toLocaleString() : 'N/A'}\n   Area: ${r.area_sqm || 'N/A'} sqm | Price/sqm: ${r.price_per_sqm ? Math.round(r.price_per_sqm) : 'N/A'} SAR`;
+                    }).join('\n\n');
+                    
+                    addMessage(recText, 'bot');
+                    conversationState = 'DONE';
+                }
+            } else {
+                addMessage("Please enter 1-5 to select a priority.", 'bot');
+            }
+        }
+
+        function resetConversation() {
+            conversationState = 'GREETING';
+            userPreferences = {
+                goal: null,
+                property_class: null,
+                property_type: null,
+                location: null,
+                budget: null
+            };
+            currentRecommendations = [];
+            addMessage("Let's start over. What would you like to find today?", 'bot');
         }
 
         function addMessage(text, type) {
@@ -603,7 +807,7 @@
             
             const avatar = document.createElement('div');
             avatar.className = 'message-avatar';
-            avatar.textContent = type === 'user' ? '' : '';
+            avatar.textContent = type === 'user' ? '👤' : '🤖';
             avatar.style.background = type === 'user' ? 'linear-gradient(135deg, #5dd9c1 0%, #2d8b7e 100%)' : '#1a1a1a';
             avatar.style.color = type === 'user' ? '#0d3331' : 'white';
             
@@ -611,6 +815,7 @@
             
             const content = document.createElement('div');
             content.className = 'message-content';
+            content.style.whiteSpace = 'pre-wrap'; // Preserve line breaks
             content.textContent = text;
             
             const time = document.createElement('div');
@@ -627,47 +832,21 @@
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
-        function getBotResponse(message) {
-            const lowerMessage = message.toLowerCase();
-            
-            for (let key in botResponses) {
-                if (lowerMessage.includes(key)) {
-                    return botResponses[key];
-                }
-            }
-            
-            // Smart responses based on real estate keywords
-            if (lowerMessage.includes('invest') || lowerMessage.includes('investment')) {
-                return 'Real estate investment can be very profitable. I can help you understand market trends, property valuations, and investment strategies. What specific aspect are you interested in?';
-            }
-            
-            if (lowerMessage.includes('buy') || lowerMessage.includes('purchase') || lowerMessage.includes('property')) {
-                return 'When buying a property, it\'s important to consider location, market value, legal aspects, and future potential. What type of property are you looking for?';
-            }
-            
-            if (lowerMessage.includes('price') || lowerMessage.includes('value') || lowerMessage.includes('cost')) {
-                return 'Property pricing depends on many factors including location, size, condition, and market trends. I can help you evaluate property values. Tell me more about what you\'re looking for.';
-            }
-            
-            if (lowerMessage.includes('market') || lowerMessage.includes('trend')) {
-                return 'The real estate market is constantly evolving. I can provide insights on current trends, future predictions, and market analysis. What area or aspect are you interested in?';
-            }
-            
-            if (lowerMessage.includes('help')) {
-                return 'Of course! I\'m here to assist with all your real estate questions - from buying and selling to investments and market analysis. What do you need help with?';
-            }
-            
-            return botResponses.default;
-        }
-
         function getCurrentTime() {
             const now = new Date();
             return now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
         }
 
-        // Focus on input field when page loads
+        // Focus on input field and show initial greeting when page loads
         window.onload = function() {
             userInput.focus();
+            setTimeout(() => {
+                addMessage("Welcome to EstateX Advisor! 👋\n\nI'm here to help you find the perfect property in Riyadh. Let me ask you a few questions to understand your needs better.\n\nPlease share what brings you here today.", 'bot');
+                setTimeout(() => {
+                    conversationState = 'GOAL';
+                    showQuestion('GOAL');
+                }, 1000);
+            }, 500);
         };
     </script>
 </body>
