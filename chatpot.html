@@ -39,7 +39,7 @@
             color: #0d3331;
             padding: 25px 30px;
             display: flex;
-            align-items: center;
+            align-items: flex-end; /* bottom-align contents */
             justify-content: space-between;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
@@ -48,7 +48,7 @@
             font-size: 28px;
             font-weight: 600;
             display: flex;
-            align-items: center;
+            align-items: flex-end; /* align text baseline with logo */
             gap: 12px;
         }
 
@@ -378,8 +378,8 @@
     <div class="chat-container">
         <div class="chat-header">
             <h1>
-                <img src="/Users/aljawharah/EstateX-Roshn-Hackathon/لوقو_مفرغ.png" alt="EstateX Logo" style="height: 45px; width: auto;">
-                EstateX Adviser
+                <img src="/Users/aljawharah/EstateX-Roshn-Hackathon/logo.png" alt="EstateX Logo" style="height: 80px; width: auto;">
+                EstateX Advisor
             </h1>
             <div class="status">
                 <div class="status-dot"></div>
@@ -389,7 +389,7 @@
 
         <div class="chat-messages" id="chatMessages">
             <div class="welcome-message">
-                <h2>Welcome to EstateX Adviser</h2>
+                <h2>Welcome to EstateX Advisor</h2>
                 <p>Your intelligent assistant for real estate consultation and advice</p>
                 <div class="suggestions">
                     <div class="suggestion-card" onclick="sendSuggestion('What are the best investment opportunities in real estate?')">
@@ -441,7 +441,7 @@
             'hello': 'Hello! How can I help you with your real estate needs today?',
             'hi': 'Hi there! How can I assist you with property matters?',
             'how are you': 'I\'m doing great, thanks for asking! How can I help you with real estate?',
-            'what is your name': 'I\'m EstateX Adviser, your intelligent real estate assistant.',
+            'what is your name': 'I\'m EstateX Advisor, your intelligent real estate assistant.',
             'thanks': 'You\'re welcome! Happy to help with your real estate needs.',
             'thank you': 'You\'re welcome! Feel free to ask anything about real estate.',
             'default': 'I\'m here to help with real estate consultation. What would you like to know?'
