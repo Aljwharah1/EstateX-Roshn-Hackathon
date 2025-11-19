@@ -1,264 +1,171 @@
-# EstateX Advisor -Roshn-Hackathon
-🏡 Real Estate Analytics Platform
-Price Prediction • Recommender System • FastAPI • HTML/CSS Frontend • XGBoost • OpenAI LLM
+# 🏡 Real-Estate Analytics MVP  
+**Machine Learning • Recommendations • Internal LLM • FastAPI • HTML/CSS/JS**
 
-This project is a complete real-estate analytics MVP combining machine learning, rules-based recommendations, and a lightweight AI assistant that only uses internal project resources (dataset + XGBoost + recommender). Users can:
+This project is a complete real-estate analytics MVP combining:
 
-Predict price per square meter (SAR/sqm)
+- **XGBoost machine learning**
+- **Rule-based recommender system**
+- **An internal AI assistant (OpenAI API) restricted ONLY to internal project resources**
+- **FastAPI backend**
+- **HTML/CSS/JS frontend**
 
-Receive personalized property recommendations
+Users can:
 
-Ask questions to an AI assistant grounded ONLY in your dataset and models
+- 🔢 Predict **price per square meter (SAR/sqm)**
+- 🧭 Receive personalized **property recommendations**
+- 🤖 Ask questions to an internal **AI assistant grounded in the dataset + XGBoost + recommender**
+- 🌐 Interact through a lightweight web interface
+- 🚀 Access the platform online after deployment
 
-Interact through a simple HTML/CSS/JS frontend
+---
 
-Access the platform online after deployment
+## 📁 Project Structure
 
-📂 Project Structure
 project/
+│
 ├── backend/
-│   ├── app/
-│   │   ├── main.py               # FastAPI entry point
-│   │   ├── model.py              # XGBoost loading + prediction
-│   │   ├── recommender.py        # Rule-based recommender
-│   │   └── llm_agent.py          # LLM constrained to project data
-│   ├── models/
-│   │   ├── xgb_model.json        # Saved XGBoost model
-│   │   └── encoders.pkl          # LabelEncoders
-│   ├── data/
-│   │   └── Finalized_Data.xlsx   # Dataset
-│   └── training/
-│       └── train_xgboost.py      # Model training script
+│ ├── app/
+│ │ ├── main.py # FastAPI entry point
+│ │ ├── model.py # XGBoost loading + prediction
+│ │ ├── recommender.py # Rule-based recommender engine
+│ │ ├── llm_agent.py # Internal LLM using OpenAI API
+│ │
+│ ├── models/
+│ │ ├── xgb_model.json # Trained XGBoost model
+│ │ ├── encoders.pkl # Label encoders
+│ │
+│ ├── data/
+│ │ └── Finalized_Data.xlsx # Project dataset
+│ │
+│ └── training/
+│ └── train_xgboost.py # Model training script
 │
 ├── frontend/
-│   ├── index.html                # Main UI
-│   ├── styles.css                # Frontend styling
-│   └── script.js                 # API calls to FastAPI
+│ ├── index.html # Main UI
+│ ├── styles.css # Frontend styling
+│ └── script.js # JS requests to FastAPI backend
 │
 └── README.md
 
-📊 Dataset Description
+
+---
+
+## 📊 Dataset Description
 
 The dataset includes the following columns:
 
-region
+- region  
+- city  
+- district  
+- location (e.g., south, west, northeast)  
+- property_type  
+- property_class  
+- area_sqm  
+- price_sar  
+- price_per_sqm  
+- year  
+- quarter  
 
-city
+---
 
-district
+## 🤖 Machine Learning Model (XGBoost)
 
-location (north, south, west…)
+The model predicts:
 
-property_type
+> **Price per square meter (SAR/sqm)**
 
-property_class
+The training script performs:
 
-area_sqm
+- Dataset cleaning  
+- Arabic categorical encoding  
+- Train/test splitting  
+- XGBoost model training  
+- Evaluation (MAE, RMSE, R²)  
+- Saving the model + encoders  
 
-year
+Train the model using:
 
-quarter
-
-price_sar
-
-price_per_sqm
-
-These features are used for:
-
-XGBoost model input
-
-Recommender system filtering
-
-LLM contextual knowledge
-
-🤖 Machine Learning Model (XGBoost)
-🎯 Target
-
-price_per_sqm (SAR per square meter)
-
-🧪 Training Script
-
-Located in:
-
-backend/training/train_xgboost.py
-
-
-It includes:
-
-Data cleaning
-
-Label encoding
-
-Train/test splitting
-
-Model training
-
-Performance metrics (MAE, RMSE, R²)
-
-Saving model + encoders
-
-📈 Latest Performance
-R²   = 0.606
-MAE  = 900.74 SAR per sqm
-RMSE = 2,050.29 SAR per sqm
-
-
-This means the model explains ~60% of price variance and predicts with ±900 SAR/sqm typical error.
-
-🔍 Recommender System
-
-The recommender filters and scores properties based on:
-
-District
-
-Price range
-
-Property class
-
-Area
-
-User goal
-
-Encoded categorical similarity
-
-Works for all properties, budgets, and goals.
-
-🧠 OpenAI LLM Integration (Internal Use Only)
-
-The LLM:
-
-Uses your dataset, XGBoost model, and recommender system as its ONLY knowledge sources
-
-Cannot fetch outside information
-
-Provides contextual explanations, summaries, and answers
-
-API Key
-
-Create an environment variable:
-
-OPENAI_API_KEY=your_api_key_here
-
-🚀 FastAPI Backend
-Run locally:
-cd backend
-uvicorn app.main:app --reload
-
-API Documentation:
-http://127.0.0.1:8000/docs
-
-📡 API Endpoints
-1️⃣ Prediction (XGBoost)
-
-POST /predict
-
-Example Input:
-
-{
-  "region": "منطقة الرياض",
-  "city": "الرياض",
-  "district": "حطين",
-  "location": "north",
-  "property_type": "شقة",
-  "property_class": "سكني",
-  "area_sqm": 120,
-  "year": 2022
-}
-
-2️⃣ Recommender
-
-POST /recommend
-
-Example Input:
-
-{
-  "min_budget": 500000,
-  "max_budget": 1500000,
-  "district": ["السلام"],
-  "property_class": ["تجاري"],
-  "goal": "investment"
-}
-
-3️⃣ LLM Assistant
-
-POST /ask-agent
-
-Example Input:
-
-{
-  "query": "What is the price trend in حطين?"
-}
-
-🎨 Frontend (HTML/CSS/JS)
-
-Your frontend contains:
-
-index.html (form inputs + prediction results)
-
-styles.css (styling)
-
-script.js (API calls)
-
-To run:
-
-Open index.html in your browser
-
-
-For production, host it on Vercel or GitHub Pages.
-
-🌐 Deployment Instructions
-🖥️ Deploy Backend (FastAPI) on Render
-
-Push backend/ to GitHub
-
-Go to Render.com → New Web Service
-
-Connect GitHub repo
-
-Setup:
-
-Build Command: pip install -r requirements.txt
-Start Command: uvicorn app.main:app --host 0.0.0.0 --port 10000
-
-
-Add ENV:
-
-OPENAI_API_KEY=your_key_here
-
-
-Deploy and copy backend URL:
-
-https://your-backend.onrender.com
-
-🌍 Deploy Frontend on Vercel
-
-Push frontend/ to GitHub
-
-Go to Vercel.com → New Project
-
-Deploy
-
-Update script.js:
-
-const BASE_URL = "https://your-backend.onrender.com";
-
-🔧 CORS Configuration (Required)
-
-Add to main.py:
-
-from fastapi.middleware.cors import CORSMiddleware
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-🧪 Local Testing
-Run backend:
-uvicorn app.main:app --reload
-
-Train model:
+```bash
 python backend/training/train_xgboost.py
+
+🧭 Recommender System
+
+A rule-based recommendation engine that matches users with properties based on:
+
+Budget
+
+Area preferences
+
+Property type
+
+Location characteristics
+
+🤖 Internal LLM (OpenAI API)
+
+A constrained assistant that has access ONLY to:
+
+The dataset
+
+XGBoost predictions
+
+Recommender rules
+
+It cannot use external data or internet information.
+
+🌐 Frontend (HTML/CSS/JS)
+
+The frontend provides:
+
+A prediction form
+
+Recommendation view
+
+Chat interface for the LLM agent
+
+🚀 Running the Project Locally
+1️⃣ Install dependencies
+
+pip install -r requirements.txt
+
+2️⃣ Start FastAPI backend
+uvicorn backend.app.main:app --reload
+
+3️⃣ Open the frontend
+
+Open the file:
+
+frontend/index.html
+
+
+Or serve it via a static server.
+
+🧪 Training the Model
+
+Run:
+
+python backend/training/train_xgboost.py
+
+
+This generates:
+
+backend/models/xgb_model.json
+
+backend/models/encoders.pkl
+
+
+🌍 Deployment
+
+You can deploy to:
+
+Render
+
+Railway
+
+Deta Space
+
+Azure App Service
+
+Docker container
+
+GitHub Pages (frontend only)
+
