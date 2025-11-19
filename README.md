@@ -1,6 +1,6 @@
 <p align="left">
   <img src="./frontend/logo.png" alt="Real Estate Logo" width="100" style="float:left; margin-right:10px;"/>
-  <h1 style="display:inline;">🏡 EstateX Advisor MVP</h1>
+  <h1 style="display:inline;"> EstateX Advisor MVP</h1>
 </p>
 **Machine Learning • Recommendations • Internal LLM • FastAPI • HTML/CSS/JS**
 
@@ -16,13 +16,13 @@ Often, buyers and investors struggle to:
 
 Traditional approaches lack scalability, consistency, and the ability to provide instant, data-driven insights.  
 
-**Real-Estate Analytics MVP** was built to address these challenges by providing an all-in-one platform that combines machine learning, intelligent recommendations, and an AI assistant.  
+**EstateX Advisor MVP** was built to address these challenges by providing an all-in-one platform that combines machine learning, intelligent recommendations, and an AI assistant.  
 
 ---
 
 ## 💡 Solution  
 
-**Real-Estate Analytics MVP** automates real estate analysis using AI and machine learning — from price prediction to personalized recommendations.  
+**EstateX Advisor MVP** automates real estate analysis using AI and machine learning — from price prediction to personalized recommendations.  
 
 **How it works:**  
 1. **Price Prediction:** Uses XGBoost machine learning to predict price per square meter (SAR/sqm) based on property features.  
@@ -152,7 +152,7 @@ The frontend provides a clean, intuitive interface with:
 
 ## 🚀 Getting Started
 
-You can run **Real-Estate Analytics MVP** locally by following these steps:
+You can run **EstateX Advisor MVP** locally by following these steps:
 
 ---
 
@@ -279,7 +279,7 @@ Key configuration files:
 
 ---
 
-## 🤝 Contributing
+## future work
 
 This is an MVP project. Future enhancements could include:
 
@@ -290,12 +290,10 @@ This is an MVP project. Future enhancements could include:
 - Advanced visualizations and analytics  
 
 ---
-
-## 📧 Contact
-
-For questions or feedback about this project, please reach out through the appropriate channels.
-
+294## 👥 Team Members
+295
+296- **Aljwharah Almousa** — [LinkedIn]([https://www.linkedin.com/in/aljwharah-almousa](https://www.linkedin.com/in/aljwharah-almousa-))
+297- **Joud Bin Jibreen** — [LinkedIn]([https://www.linkedin.com/in/joud-binjibreen](https://www.linkedin.com/in/joud-bin-jibreen-877b53193))
+298- **Nouf Bin Huwaidi** — [LinkedIn](https://www.linkedin.com/in/nouf-bin-huwaidi-4289441b6)
+299- **Ruwaa Surrati** — [LinkedIn](https://www.linkedin.com/in/ruwaa-surrati)
 ---
-
-**Built with ❤️ using Machine Learning, FastAPI, and AI**
-
