@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EstateX - AI-Powered Real Estate Intelligence</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a1614;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        /* Header Styles */
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(10, 22, 20, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px 0;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(93, 217, 193, 0.2);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s ease;
+        }
+
+        .logo-icon:hover {
+            transform: scale(1.05);
+        }
+
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .logo-text {
+            font-size: 28px;
+            font-weight: 700;
+            color: #5dd9c1;
+            text-shadow: 0 0 10px rgba(93, 217, 193, 0.3);
+        }
+
+        nav {
+            display: flex;
+            gap: 30px;
+        }
+
+        nav a {
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            padding: 5px 0;
+        }
+
+        nav a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #5dd9c1;
+            transition: width 0.3s ease;
+        }
+
+        nav a:hover {
+            color: #5dd9c1;
+        }
+
+        nav a:hover::after {
+            width: 100%;
+        }
+
+        .chat-btn {
+            background: linear-gradient(135deg, #5dd9c1 0%, #2d8b7e 100%);
+            color: #0d3331;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(93, 217, 193, 0.4);
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .chat-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(93, 217, 193, 0.6);
+        }
+
+        /* Particles Background */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            background: #5dd9c1;
+            opacity: 0.1;
+            animation: float 25s infinite;
+        }
+
+        .particle.house {
+            width: 50px;
+            height: 50px;
+            clip-path: polygon(50% 0%, 100% 35%, 100% 100%, 0% 100%, 0% 35%);
+        }
+
+        .particle.building {
+            width: 35px;
+            height: 70px;
+            border-radius: 5px;
+        }
+
+        .particle.land {
+            width: 70px;
+            height: 45px;
+            border-radius: 8px;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0) translateX(0) rotate(0deg);
+            }
+            25% {
+                transform: translateY(-120px) translateX(80px) rotate(90deg);
+            }
+            50% {
+                transform: translateY(-240px) translateX(-80px) rotate(180deg);
+            }
+            75% {
+                transform: translateY(-120px) translateX(-120px) rotate(270deg);
+            }
+        }
+
+        /* Main Content */
+        main {
+            margin-top: 100px;
+            padding-bottom: 60px;
+        }
+
+        /* Hero Section */
+        .hero {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 80px 40px;
+            text-align: center;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        .hero-logo {
+            width: 280px;
+            height: 280px;
+            margin: 0 auto 40px;
+            animation: logoFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes logoFloat {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-15px);
+            }
+        }
+
+        .hero-logo img {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 15px 35px rgba(93, 217, 193, 0.5));
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero h1 {
+            font-size: 56px;
+            font-weight: 700;
+            color: #5dd9c1;
+            margin-bottom: 30px;
+            text-shadow: 0 0 30px rgba(93, 217, 193, 0.5);
+            line-height: 1.3;
+        }
+
+        .hero .subtitle {
+            font-size: 28px;
+            color: #ffffff;
+            margin-bottom: 20px;
+            opacity: 0.95;
+            font-weight: 300;
+        }
+
+        .hero .tagline {
+            font-size: 20px;
+            color: #5dd9c1;
+            margin-bottom: 50px;
+            opacity: 0.85;
+            font-style: italic;
+        }
+
+        /* Content Sections */
+        .section {
+            max-width: 1200px;
+            margin: 80px auto;
+            padding: 0 40px;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        .section-title {
+            font-size: 42px;
+            font-weight: 700;
+            color: #5dd9c1;
+            margin-bottom: 30px;
+            text-align: center;
+            text-shadow: 0 0 20px rgba(93, 217, 193, 0.4);
+        }
+
+        .section-content {
+            background: rgba(93, 217, 193, 0.05);
+            border: 1px solid rgba(93, 217, 193, 0.2);
+            border-radius: 20px;
+            padding: 50px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .section-content:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 50px rgba(93, 217, 193, 0.2);
+            border-color: rgba(93, 217, 193, 0.4);
+        }
+
+        .section-text {
+            font-size: 20px;
+            line-height: 1.8;
+            color: #ffffff;
+            opacity: 0.9;
+            text-align: justify;
+        }
+
+        /* Vision & Mission Grid */
+        .vm-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 40px;
+            margin-top: 60px;
+        }
+
+        .vm-card {
+            background: rgba(93, 217, 193, 0.05);
+            border: 1px solid rgba(93, 217, 193, 0.2);
+            border-radius: 20px;
+            padding: 40px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .vm-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(93, 217, 193, 0.1) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .vm-card:hover::before {
+            opacity: 1;
+        }
+
+        .vm-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(93, 217, 193, 0.4);
+            box-shadow: 0 15px 50px rgba(93, 217, 193, 0.2);
+        }
+
+        .vm-card h3 {
+            font-size: 32px;
+            color: #5dd9c1;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .vm-icon {
+            font-size: 36px;
+        }
+
+        .vm-card p {
+            font-size: 18px;
+            line-height: 1.8;
+            color: #ffffff;
+            opacity: 0.9;
+        }
+
+        /* Target Audience */
+        .audience-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-top: 50px;
+        }
+
+        .audience-item {
+            background: rgba(93, 217, 193, 0.05);
+            border: 1px solid rgba(93, 217, 193, 0.2);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .audience-item:hover {
+            transform: translateY(-5px);
+            background: rgba(93, 217, 193, 0.1);
+            border-color: rgba(93, 217, 193, 0.4);
+            box-shadow: 0 10px 30px rgba(93, 217, 193, 0.2);
+        }
+
+        .audience-item i {
+            font-size: 50px;
+            color: #5dd9c1;
+            margin-bottom: 20px;
+            display: block;
+            transition: all 0.3s ease;
+        }
+
+        .audience-item:hover i {
+            transform: scale(1.1);
+            color: #ffffff;
+        }
+
+        .audience-item p {
+            font-size: 16px;
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            text-align: center;
+            padding: 80px 40px;
+            margin: 80px auto;
+            max-width: 1000px;
+            background: linear-gradient(135deg, rgba(93, 217, 193, 0.1) 0%, rgba(45, 139, 126, 0.1) 100%);
+            border-radius: 30px;
+            border: 2px solid rgba(93, 217, 193, 0.3);
+        }
+
+        .cta-section h2 {
+            font-size: 42px;
+            color: #5dd9c1;
+            margin-bottom: 25px;
+            text-shadow: 0 0 20px rgba(93, 217, 193, 0.4);
+        }
+
+        .cta-section p {
+            font-size: 22px;
+            color: #ffffff;
+            margin-bottom: 40px;
+            opacity: 0.9;
+        }
+
+        .cta-button {
+            background: linear-gradient(135deg, #5dd9c1 0%, #2d8b7e 100%);
+            color: #0d3331;
+            padding: 20px 60px;
+            font-size: 22px;
+            font-weight: 700;
+            border-radius: 50px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(93, 217, 193, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(93, 217, 193, 0.7);
+        }
+
+        /* Footer */
+        footer {
+            background: rgba(10, 22, 20, 0.95);
+            border-top: 1px solid rgba(93, 217, 193, 0.2);
+            padding: 30px 40px;
+            text-align: center;
+        }
+
+        footer p {
+            color: #ffffff;
+            opacity: 0.7;
+            font-size: 16px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            nav {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .hero-logo {
+                width: 200px;
+                height: 200px;
+            }
+
+            .hero h1 {
+                font-size: 36px;
+            }
+
+            .hero .subtitle {
+                font-size: 20px;
+            }
+
+            .section-title {
+                font-size: 32px;
+            }
+
+            .vm-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .audience-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            }
+
+            .section-content {
+                padding: 30px;
+            }
+        }
+
+        /* Scroll Animation */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease-out;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <!-- Particles Background -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Header -->
+    <header>
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">
+                    <img src="estatex-icon.svg" alt="EstateX Icon">
+                </div>
+                <span class="logo-text">EstateX</span>
+            </div>
+            <nav>
+                <a href="#home">Home</a>
+                <a href="#vision">Vision & Mission</a>
+                <a href="#audience">Who We Serve</a>
+                <a href="chatbot.html" class="chat-btn">Chat with AI Assistant</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Hero Section -->
+        <section class="hero" id="home">
+            <div class="hero-logo">
+                <img src="estatex-logo.svg" alt="EstateX Logo">
+            </div>
+            <h1>Welcome to EstateX</h1>
+            <p class="subtitle">Where Real Estate Meets Intelligence</p>
+            <p class="tagline">"Turning Complex Data Into Clear Decisions"</p>
+        </section>
+
+        <!-- Vision & Mission -->
+        <section class="section fade-in" id="vision">
+            <h2 class="section-title">Our Vision & Mission</h2>
+            <div class="vm-grid">
+                <div class="vm-card">
+                    <h3><i class="bi bi-eye vm-icon"></i> Vision</h3>
+                    <p>
+                        To become the region's leading PropTech intelligence platform, unlocking a future where every real estate decision is informed, accurate, and data-driven.
+                    </p>
+                </div>
+                <div class="vm-card">
+                    <h3><i class="bi bi-rocket-takeoff vm-icon"></i> Mission</h3>
+                    <p>
+                        To develop innovative, AI-driven real estate solutions that turn complex data into actionable insights—empowering developers, investors, and government entities to make smarter decisions, improve project quality, and elevate the future of urban development.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Target Audience -->
+        <section class="section fade-in" id="audience">
+            <h2 class="section-title">Who We Serve</h2>
+            <div class="audience-grid">
+                <div class="audience-item">
+                    <i class="bi bi-building"></i>
+                    <p>Real Estate Developers</p>
+                </div>
+                <div class="audience-item">
+                    <i class="bi bi-bank"></i>
+                    <p>Government Entities</p>
+                </div>
+                <div class="audience-item">
+                    <i class="bi bi-briefcase"></i>
+                    <p>Investors & Asset Managers</p>
+                </div>
+                <div class="audience-item">
+                    <i class="bi bi-bar-chart-line"></i>
+                    <p>Valuation Firms</p>
+                </div>
+                <div class="audience-item">
+                    <i class="bi bi-map"></i>
+                    <p>Urban Planners</p>
+                </div>
+                <div class="audience-item">
+                    <i class="bi bi-tools"></i>
+                    <p>Construction & Contracting</p>
+                </div>
+                <div class="audience-item">
+                    <i class="bi bi-houses"></i>
+                    <p>Real Estate Agencies</p>
+                </div>
+                <div class="audience-item">
+                    <i class="bi bi-person"></i>
+                    <p>Individual Buyers</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="cta-section fade-in">
+            <h2>Start Your Journey with Real Estate Intelligence</h2>
+            <p>Let our AI assistant help you make the best real estate decisions</p>
+            <a href="chatbot.html" class="cta-button">Get Started</a>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2024 EstateX Technologies. All Rights Reserved | Where Real Estate Meets Intelligence</p>
+    </footer>
+
+    <script>
+        // Create animated particles
+        const particlesContainer = document.getElementById('particles');
+        const shapes = ['house', 'building', 'land'];
+        for (let i = 0; i < 20; i++) {
+            const particle = document.createElement('div');
+            const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
+            particle.className = `particle ${randomShape}`;
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.top = Math.random() * 100 + '%';
+            particle.style.animationDelay = Math.random() * 25 + 's';
+            particle.style.animationDuration = (20 + Math.random() * 10) + 's';
+            particlesContainer.appendChild(particle);
+        }
+
+        // Scroll animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -100px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.fade-in').forEach(element => {
+            observer.observe(element);
+        });
+
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
