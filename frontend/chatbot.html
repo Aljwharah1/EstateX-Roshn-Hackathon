@@ -714,7 +714,13 @@
                         
                         // Display recommendations
                         const recText = currentRecommendations.map((r, idx) => {
-                            return `${idx + 1}. ${r.property_type || 'Property'} in ${r.district || 'Unknown'}\n   Location: ${r.location || 'N/A'} | Price: SAR ${r.price_sar ? r.price_sar.toLocaleString() : 'N/A'}\n   Area: ${r.area_sqm || 'N/A'} sqm | Price/sqm: ${r.price_per_sqm ? Math.round(r.price_per_sqm) : 'N/A'} SAR`;
+                            let base = `${idx + 1}. ${r.property_type || 'Property'} in ${r.district || 'Unknown'}\n   Location: ${r.location || 'N/A'} | Price: SAR ${r.price_sar ? r.price_sar.toLocaleString() : 'N/A'}\n   Area: ${r.area_sqm || 'N/A'} sqm | Price/sqm: ${r.price_per_sqm ? Math.round(r.price_per_sqm) : 'N/A'} SAR`;
+                            if (userPreferences.goal === 'long_term_investment' || userPreferences.goal === 'short_term_investment') {
+                                base += `\n   📈 Estimated revenue in 5 years: SAR ${r.revenue_5y ? r.revenue_5y.toLocaleString() : 'N/A'}`;
+                                base += `\n   📈 Estimated revenue in 10 years: SAR ${r.revenue_10y ? r.revenue_10y.toLocaleString() : 'N/A'}`;
+                                base += `\n   📈 Estimated revenue in 20 years: SAR ${r.revenue_20y ? r.revenue_20y.toLocaleString() : 'N/A'}`;
+                            }
+                            return base;
                         }).join('\n\n');
                         
                         addMessage(recText, 'bot');

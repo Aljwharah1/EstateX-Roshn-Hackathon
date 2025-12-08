@@ -84,6 +84,20 @@ def recommend_properties(prefs: UserPrefs):
         lambda r: forecast_model.predict_price(r), axis=1
     )
     
+    # If goal is long-term investment, add future revenue forecasts
+    goal = prefs_dict.get("goal", "")
+    if goal == "investment":
+        # Assume annual appreciation rate (e.g., 5%)
+        appreciation_rate = 0.05
+        def forecast_revenue(row, years):
+            price = row["price_sar"]
+            if pd.isnull(price):
+                return None
+            return round(price * ((1 + appreciation_rate) ** years), 2)
+        results["revenue_5y"] = results.apply(lambda r: forecast_revenue(r, 5), axis=1)
+        results["revenue_10y"] = results.apply(lambda r: forecast_revenue(r, 10), axis=1)
+        results["revenue_20y"] = results.apply(lambda r: forecast_revenue(r, 20), axis=1)
+    
     # Convert to dict
     output = results.to_dict(orient="records")
     return output
