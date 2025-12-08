@@ -105,8 +105,8 @@ def recommend_properties(prefs: UserPrefs):
 
 @app.get("/")
 def root():
-    # serve the frontend index
-    return FileResponse("frontend/index.html")
+    # serve the frontend home page
+    return FileResponse("frontend/home.html")
 
 
 @app.post("/ask")
