@@ -590,6 +590,7 @@
             }
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -865,8 +866,13 @@
             setTimeout(() => { window.location.href = 'chatbot.html'; }, 2700);
         }
 
+        // ----- Supabase Setup -----
+        const SUPABASE_URL     = 'https://cjjxbemelckazykfkiai.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqanhiZW1lbGNrYXp5a2ZraWFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyNTMzNTgsImV4cCI6MjA4NjgyOTM1OH0.GvWn1IVgdAgn_kk5ZFyJB-qcn9UeQIUipG7ANVc0jfc';
+        const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         // ----- Login -----
-        function handleLogin() {
+        async function handleLogin() {
             const email    = document.getElementById('loginEmail').value.trim();
             const password = document.getElementById('loginPassword').value;
 
@@ -879,13 +885,19 @@
                 return;
             }
 
-            // Store session (simple demo — replace with real auth)
-            sessionStorage.setItem('estatex_user', JSON.stringify({ email }));
-            redirectToChat('Welcome back!', 'Redirecting you to your AI Advisor...');
+            try {
+                const { data, error } = await sb.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+                
+                redirectToChat('Welcome back!', 'Redirecting you to your AI Advisor...');
+            } catch (err) {
+                alert('Login failed: ' + (err.message || 'Unknown error'));
+                console.error(err);
+            }
         }
 
         // ----- Sign Up -----
-        function handleSignup() {
+        async function handleSignup() {
             const name     = document.getElementById('signupName').value.trim();
             const email    = document.getElementById('signupEmail').value.trim();
             const password = document.getElementById('signupPassword').value;
@@ -908,13 +920,24 @@
                 return;
             }
 
-            sessionStorage.setItem('estatex_user', JSON.stringify({ name, email }));
-            redirectToChat(`Welcome, ${name}!`, 'Your account has been created. Launching AI Advisor...');
+            try {
+                const { data, error } = await sb.auth.signUp({ email, password });
+                if (error) throw error;
+                
+                // Sign in immediately after signup
+                const { error: signInErr } = await sb.auth.signInWithPassword({ email, password });
+                if (signInErr) throw signInErr;
+                
+                redirectToChat(`Welcome, ${name}!`, 'Your account has been created. Launching AI Advisor...');
+            } catch (err) {
+                alert('Sign up failed: ' + (err.message || 'Unknown error'));
+                console.error(err);
+            }
         }
 
         // ----- Guest Login -----
         function handleGuest() {
-            sessionStorage.setItem('estatex_user', JSON.stringify({ guest: true, name: 'Guest User' }));
+            // Guest mode - just redirect to chatbot
             redirectToChat('Welcome, Guest!', 'Launching AI Advisor in Guest Mode...');
         }
 
