@@ -3,8 +3,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List, Optional
+import os
 
 app = FastAPI(title="EstateX - Real Estate AI Advisor")
 
@@ -16,6 +18,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ============ Static Files ============
+# Mount frontend directory to serve images, CSS, JS, etc.
+frontend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
+if os.path.exists(frontend_path):
+    app.mount("/static", StaticFiles(directory=frontend_path), name="static")
+else:
+    print(f"[WARNING] Frontend directory not found at {frontend_path}")
 
 # ============ Pydantic Models ============
 class UserPrefs(BaseModel):
