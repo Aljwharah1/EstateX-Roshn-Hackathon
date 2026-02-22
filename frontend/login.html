@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EstateX - Login & Sign Up</title>
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a1614;
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Particles Background */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .particle {
+            position: absolute;
+            background: #5dd9c1;
+            opacity: 0.08;
+            animation: float 25s infinite;
+        }
+
+        .particle.house {
+            width: 50px;
+            height: 50px;
+            clip-path: polygon(50% 0%, 100% 35%, 100% 100%, 0% 100%, 0% 35%);
+        }
+
+        .particle.building {
+            width: 35px;
+            height: 70px;
+            border-radius: 5px;
+        }
+
+        .particle.land {
+            width: 70px;
+            height: 45px;
+            border-radius: 8px;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0) rotate(0deg); }
+            25% { transform: translateY(-120px) translateX(80px) rotate(90deg); }
+            50% { transform: translateY(-240px) translateX(-80px) rotate(180deg); }
+            75% { transform: translateY(-120px) translateX(-120px) rotate(270deg); }
+        }
+
+        /* Header */
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(10, 22, 20, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px 0;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(93, 217, 193, 0.2);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #5dd9c1, #2d8b7e);
+            border-radius: 12px;
+            font-size: 28px;
+            color: #0d3331;
+        }
+
+        .logo-text {
+            font-size: 28px;
+            font-weight: 700;
+            color: #5dd9c1;
+            text-shadow: 0 0 10px rgba(93, 217, 193, 0.3);
+        }
+
+        .back-btn {
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 15px;
+            opacity: 0.8;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            color: #5dd9c1;
+            opacity: 1;
+        }
+
+        .back-btn i {
+            font-size: 18px;
+        }
+
+        /* Main Layout */
+        main {
+            flex: 1;
+            margin-top: 90px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Auth Container */
+        .auth-wrapper {
+            width: 100%;
+            max-width: 960px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            min-height: 580px;
+            border-radius: 24px;
+            overflow: hidden;
+            border: 1px solid rgba(93, 217, 193, 0.25);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5), 0 0 60px rgba(93, 217, 193, 0.08);
+            animation: slideUp 0.7s ease-out both;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Left Panel - Branding */
+        .brand-panel {
+            background: linear-gradient(145deg, #0d3331 0%, #0a2220 50%, #071a18 100%);
+            padding: 60px 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .brand-panel::before {
+            content: '';
+            position: absolute;
+            top: -80px;
+            right: -80px;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(93, 217, 193, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .brand-panel::after {
+            content: '';
+            position: absolute;
+            bottom: -60px;
+            left: -60px;
+            width: 250px;
+            height: 250px;
+            background: radial-gradient(circle, rgba(45, 139, 126, 0.12) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .brand-logo-large {
+            font-size: 52px;
+            font-weight: 800;
+            color: #5dd9c1;
+            text-shadow: 0 0 30px rgba(93, 217, 193, 0.5);
+            margin-bottom: 20px;
+            line-height: 1;
+            position: relative;
+            z-index: 1;
+        }
+
+        .brand-tagline {
+            font-size: 16px;
+            color: #5dd9c1;
+            font-style: italic;
+            opacity: 0.8;
+            margin-bottom: 40px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .brand-description {
+            font-size: 17px;
+            color: #ffffff;
+            opacity: 0.75;
+            line-height: 1.8;
+            margin-bottom: 50px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .brand-features {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .brand-features li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 15px;
+            color: #ffffff;
+            opacity: 0.85;
+        }
+
+        .brand-features i {
+            font-size: 20px;
+            color: #5dd9c1;
+            flex-shrink: 0;
+        }
+
+        /* Right Panel - Auth Form */
+        .form-panel {
+            background: #111e1c;
+            padding: 60px 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Tab Switcher */
+        .tab-switcher {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            background: rgba(93, 217, 193, 0.07);
+            border: 1px solid rgba(93, 217, 193, 0.2);
+            border-radius: 12px;
+            padding: 5px;
+            margin-bottom: 40px;
+            position: relative;
+            gap: 5px;
+        }
+
+        .tab-btn {
+            padding: 12px 8px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            background: transparent;
+            color: #ffffff;
+            opacity: 0.5;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            white-space: nowrap;
+        }
+
+        .tab-btn i {
+            font-size: 16px;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #5dd9c1 0%, #2d8b7e 100%);
+            color: #0d3331;
+            opacity: 1;
+            box-shadow: 0 4px 15px rgba(93, 217, 193, 0.4);
+        }
+
+        /* Form Styles */
+        .auth-form {
+            display: none;
+            flex-direction: column;
+            gap: 22px;
+            animation: fadeForm 0.4s ease;
+        }
+
+        .auth-form.active {
+            display: flex;
+        }
+
+        @keyframes fadeForm {
+            from { opacity: 0; transform: translateX(10px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+
+        .form-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 5px;
+        }
+
+        .form-subtitle {
+            font-size: 14px;
+            color: #ffffff;
+            opacity: 0.5;
+            margin-bottom: 10px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #5dd9c1;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            left: 16px;
+            font-size: 18px;
+            color: #5dd9c1;
+            opacity: 0.6;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px 14px 46px;
+            background: rgba(93, 217, 193, 0.05);
+            border: 1px solid rgba(93, 217, 193, 0.2);
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 15px;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .form-group input:focus {
+            border-color: #5dd9c1;
+            background: rgba(93, 217, 193, 0.08);
+            box-shadow: 0 0 0 3px rgba(93, 217, 193, 0.12);
+        }
+
+        .form-group input:focus ~ i,
+        .input-wrapper:focus-within > i {
+            opacity: 1;
+        }
+
+        /* Password Toggle */
+        .toggle-pw {
+            position: absolute;
+            right: 14px;
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.4);
+            cursor: pointer;
+            font-size: 18px;
+            padding: 4px;
+            transition: color 0.2s;
+            pointer-events: all;
+        }
+
+        .toggle-pw:hover {
+            color: #5dd9c1;
+        }
+
+        .toggle-pw i {
+            position: static;
+            pointer-events: none;
+        }
+
+        /* Forgot Password */
+        .forgot-link {
+            font-size: 13px;
+            color: #5dd9c1;
+            text-decoration: none;
+            opacity: 0.8;
+            text-align: right;
+            margin-top: -10px;
+            transition: opacity 0.2s;
+        }
+
+        .forgot-link:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+
+        /* Submit Button */
+        .submit-btn {
+            background: linear-gradient(135deg, #5dd9c1 0%, #2d8b7e 100%);
+            color: #0d3331;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 700;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(93, 217, 193, 0.4);
+            letter-spacing: 0.5px;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .submit-btn i {
+            font-size: 20px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(93, 217, 193, 0.6);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Terms */
+        .terms-text {
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .terms-text a {
+            color: #5dd9c1;
+            text-decoration: none;
+            opacity: 0.8;
+        }
+
+        .terms-text a:hover {
+            text-decoration: underline;
+        }
+
+        /* Success overlay */
+        .success-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 22, 20, 0.95);
+            z-index: 9999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 25px;
+            animation: fadeOverlay 0.4s ease;
+        }
+
+        .success-overlay.show {
+            display: flex;
+        }
+
+        @keyframes fadeOverlay {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .success-icon {
+            width: 90px;
+            height: 90px;
+            background: linear-gradient(135deg, #5dd9c1, #2d8b7e);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 46px;
+            color: #0d3331;
+            box-shadow: 0 0 50px rgba(93, 217, 193, 0.6);
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.2s both;
+        }
+
+        .success-icon i {
+            font-size: 50px;
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0); opacity: 0; }
+            to   { transform: scale(1); opacity: 1; }
+        }
+
+        .success-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #5dd9c1;
+            text-align: center;
+        }
+
+        .success-sub {
+            font-size: 17px;
+            color: rgba(255,255,255,0.7);
+            text-align: center;
+        }
+
+        .progress-bar-wrap {
+            width: 280px;
+            height: 5px;
+            background: rgba(93, 217, 193, 0.15);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #5dd9c1, #2d8b7e);
+            border-radius: 10px;
+            animation: progressFill 2s linear 0.5s forwards;
+            width: 0%;
+        }
+
+        @keyframes progressFill {
+            from { width: 0%; }
+            to   { width: 100%; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .auth-wrapper {
+                grid-template-columns: 1fr;
+            }
+
+            .brand-panel {
+                padding: 40px 30px;
+            }
+
+            .brand-description, .brand-features { display: none; }
+
+            .brand-logo-large { font-size: 38px; }
+
+            .form-panel {
+                padding: 40px 30px;
+            }
+
+            .header-content {
+                padding: 0 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Particles -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Header -->
+    <header>
+        <div class="header-content">
+            <a href="home.html" class="logo">
+                <div class="logo-icon">
+                    <i class="bi bi-buildings-fill"></i>
+                </div>
+                <span class="logo-text">EstateX</span>
+            </a>
+            <a href="home.html" class="back-btn">
+                <i class="bi bi-arrow-left"></i> Back to Home
+            </a>
+        </div>
+    </header>
+
+    <!-- Main -->
+    <main>
+        <div class="auth-wrapper">
+
+            <!-- Left Brand Panel -->
+            <div class="brand-panel">
+                <div class="brand-logo-large">EstateX</div>
+                <p class="brand-tagline">"Turning Complex Data Into Clear Decisions"</p>
+                <p class="brand-description">
+                    Join thousands of investors, developers, and homebuyers who trust EstateX for intelligent, data-driven real estate decisions across Riyadh.
+                </p>
+                <ul class="brand-features">
+                    <li><i class="bi bi-robot"></i> AI-powered property recommendations</li>
+                    <li><i class="bi bi-graph-up-arrow"></i> Real-time market intelligence</li>
+                    <li><i class="bi bi-shield-check"></i> Verified listings and data</li>
+                    <li><i class="bi bi-geo-alt-fill"></i> Hyperlocal Riyadh insights</li>
+                </ul>
+            </div>
+
+            <!-- Right Form Panel -->
+            <div class="form-panel">
+
+                <!-- Tab Switcher -->
+                <div class="tab-switcher">
+                    <button class="tab-btn active" id="loginTab" onclick="switchTab('login')">
+                        <i class="bi bi-box-arrow-in-right"></i> Login
+                    </button>
+                    <button class="tab-btn" id="signupTab" onclick="switchTab('signup')">
+                        <i class="bi bi-person-plus"></i> Sign Up
+                    </button>
+                    <button class="tab-btn" id="guestTab" onclick="switchTab('guest')">
+                        <i class="bi bi-incognito"></i> Guest
+                    </button>
+                </div>
+
+                <!-- Login Form -->
+                <div class="auth-form active" id="loginForm">
+                    <div>
+                        <div class="form-title">Welcome back</div>
+                        <div class="form-subtitle">Sign in to your EstateX account</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <div class="input-wrapper">
+                            <i class="bi bi-envelope"></i>
+                            <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Password</label>
+                        <div class="input-wrapper">
+                            <i class="bi bi-lock"></i>
+                            <input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password">
+                            <button class="toggle-pw" onclick="togglePassword('loginPassword', this)" type="button" tabindex="-1">
+                                <i class="bi bi-eye pw-eye-icon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <a href="#" class="forgot-link">Forgot your password?</a>
+
+                    <button class="submit-btn" onclick="handleLogin()">
+                        <i class="bi bi-box-arrow-in-right"></i> Sign In
+                    </button>
+
+                    <div class="terms-text">
+                        Don't have an account?
+                        <a href="#" onclick="switchTab('signup')">Create one now</a>
+                    </div>
+                </div>
+
+                <!-- Sign Up Form -->
+                <div class="auth-form" id="signupForm">
+                    <div>
+                        <div class="form-title">Create an account</div>
+                        <div class="form-subtitle">Start your real estate journey with EstateX</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <div class="input-wrapper">
+                            <i class="bi bi-person"></i>
+                            <input type="text" id="signupName" placeholder="Your full name" autocomplete="name">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <div class="input-wrapper">
+                            <i class="bi bi-envelope"></i>
+                            <input type="email" id="signupEmail" placeholder="you@example.com" autocomplete="email">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Password</label>
+                        <div class="input-wrapper">
+                            <i class="bi bi-lock"></i>
+                            <input type="password" id="signupPassword" placeholder="Min. 8 characters" autocomplete="new-password">
+                            <button class="toggle-pw" onclick="togglePassword('signupPassword', this)" type="button" tabindex="-1">
+                                <i class="bi bi-eye pw-eye-icon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Confirm Password</label>
+                        <div class="input-wrapper">
+                            <i class="bi bi-lock-fill"></i>
+                            <input type="password" id="signupConfirm" placeholder="Repeat your password" autocomplete="new-password">
+                        </div>
+                    </div>
+
+                    <button class="submit-btn" onclick="handleSignup()">
+                        <i class="bi bi-person-check"></i> Create Account
+                    </button>
+
+                    <div class="terms-text">
+                        By signing up you agree to our
+                        <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
+                    </div>
+                </div>
+
+                <!-- Guest Form -->
+                <div class="auth-form" id="guestForm">
+                    <div>
+                        <div class="form-title">Continue as Guest</div>
+                        <div class="form-subtitle">Explore EstateX without creating an account</div>
+                    </div>
+
+                    <div style="background: rgba(93, 217, 193, 0.1); border: 1px solid rgba(93, 217, 193, 0.3); border-radius: 12px; padding: 20px; margin: 20px 0;">
+                        <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 15px;">
+                            <i class="bi bi-info-circle" style="font-size: 22px; color: #5dd9c1; margin-top: 2px;"></i>
+                            <div>
+                                <div style="font-size: 15px; font-weight: 600; color: #5dd9c1; margin-bottom: 8px;">Guest Mode Features</div>
+                                <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px;">
+                                    <li style="font-size: 13px; color: rgba(255,255,255,0.7); display: flex; align-items: center; gap: 8px;">
+                                        <i class="bi bi-check-circle-fill" style="color: #5dd9c1; font-size: 14px;"></i> Browse properties
+                                    </li>
+                                    <li style="font-size: 13px; color: rgba(255,255,255,0.7); display: flex; align-items: center; gap: 8px;">
+                                        <i class="bi bi-check-circle-fill" style="color: #5dd9c1; font-size: 14px;"></i> Use AI Chat
+                                    </li>
+                                    <li style="font-size: 13px; color: rgba(255,255,255,0.7); display: flex; align-items: center; gap: 8px;">
+                                        <i class="bi bi-check-circle-fill" style="color: #5dd9c1; font-size: 14px;"></i> Get price predictions
+                                    </li>
+                                    <li style="font-size: 13px; color: rgba(255,255,255,0.5); display: flex; align-items: center; gap: 8px;">
+                                        <i class="bi bi-x-circle-fill" style="color: rgba(255,255,255,0.3); font-size: 14px;"></i> Save favorites (requires account)
+                                    </li>
+                                    <li style="font-size: 13px; color: rgba(255,255,255,0.5); display: flex; align-items: center; gap: 8px;">
+                                        <i class="bi bi-x-circle-fill" style="color: rgba(255,255,255,0.3); font-size: 14px;"></i> Personalized recommendations (requires account)
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="submit-btn" onclick="handleGuest()">
+                        <i class="bi bi-door-open"></i> Continue as Guest
+                    </button>
+
+                    <div class="terms-text">
+                        Want full features?
+                        <a href="#" onclick="switchTab('signup')">Create an account</a> or 
+                        <a href="#" onclick="switchTab('login')">Sign in</a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Success Overlay -->
+    <div class="success-overlay" id="successOverlay">
+        <div class="success-icon">
+            <i class="bi bi-check-circle-fill"></i>
+        </div>
+        <div class="success-title" id="successTitle">Welcome to EstateX!</div>
+        <div class="success-sub" id="successSub">Redirecting you to your AI Advisor...</div>
+        <div class="progress-bar-wrap">
+            <div class="progress-bar-fill"></div>
+        </div>
+    </div>
+
+    <script>
+        // ----- Particles -----
+        const pc = document.getElementById('particles');
+        ['house','building','land'].forEach(shape => {
+            for (let i = 0; i < 7; i++) {
+                const p = document.createElement('div');
+                p.className = `particle ${shape}`;
+                p.style.left = Math.random() * 100 + '%';
+                p.style.top  = Math.random() * 100 + '%';
+                p.style.animationDelay    = Math.random() * 25 + 's';
+                p.style.animationDuration = (20 + Math.random() * 10) + 's';
+                pc.appendChild(p);
+            }
+        });
+
+        // ----- Tab Switch -----
+        function switchTab(tab) {
+            const loginForm  = document.getElementById('loginForm');
+            const signupForm = document.getElementById('signupForm');
+            const guestForm  = document.getElementById('guestForm');
+            const loginTab   = document.getElementById('loginTab');
+            const signupTab  = document.getElementById('signupTab');
+            const guestTab   = document.getElementById('guestTab');
+
+            // Remove active from all
+            loginForm.classList.remove('active');
+            signupForm.classList.remove('active');
+            guestForm.classList.remove('active');
+            loginTab.classList.remove('active');
+            signupTab.classList.remove('active');
+            guestTab.classList.remove('active');
+
+            // Add active to selected
+            if (tab === 'login') {
+                loginForm.classList.add('active');
+                loginTab.classList.add('active');
+            } else if (tab === 'signup') {
+                signupForm.classList.add('active');
+                signupTab.classList.add('active');
+            } else if (tab === 'guest') {
+                guestForm.classList.add('active');
+                guestTab.classList.add('active');
+            }
+        }
+
+        // ----- Password Toggle -----
+        function togglePassword(inputId, btn) {
+            const input = document.getElementById(inputId);
+            const icon  = btn.querySelector('.pw-eye-icon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            }
+        }
+
+        // ----- Redirect Helper -----
+        function redirectToChat(title, sub) {
+            const overlay = document.getElementById('successOverlay');
+            document.getElementById('successTitle').textContent = title;
+            document.getElementById('successSub').textContent   = sub;
+            overlay.classList.add('show');
+            setTimeout(() => { window.location.href = 'chatbot.html'; }, 2700);
+        }
+
+        // ----- Login -----
+        function handleLogin() {
+            const email    = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            if (!email || !password) {
+                alert('Please enter your email and password.');
+                return;
+            }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                alert('Please enter a valid email address.');
+                return;
+            }
+
+            // Store session (simple demo — replace with real auth)
+            sessionStorage.setItem('estatex_user', JSON.stringify({ email }));
+            redirectToChat('Welcome back!', 'Redirecting you to your AI Advisor...');
+        }
+
+        // ----- Sign Up -----
+        function handleSignup() {
+            const name     = document.getElementById('signupName').value.trim();
+            const email    = document.getElementById('signupEmail').value.trim();
+            const password = document.getElementById('signupPassword').value;
+            const confirm  = document.getElementById('signupConfirm').value;
+
+            if (!name || !email || !password || !confirm) {
+                alert('Please fill in all fields.');
+                return;
+            }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                alert('Please enter a valid email address.');
+                return;
+            }
+            if (password.length < 8) {
+                alert('Password must be at least 8 characters long.');
+                return;
+            }
+            if (password !== confirm) {
+                alert('Passwords do not match. Please try again.');
+                return;
+            }
+
+            sessionStorage.setItem('estatex_user', JSON.stringify({ name, email }));
+            redirectToChat(`Welcome, ${name}!`, 'Your account has been created. Launching AI Advisor...');
+        }
+
+        // ----- Guest Login -----
+        function handleGuest() {
+            sessionStorage.setItem('estatex_user', JSON.stringify({ guest: true, name: 'Guest User' }));
+            redirectToChat('Welcome, Guest!', 'Launching AI Advisor in Guest Mode...');
+        }
+
+        // ----- Enter key support -----
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            const loginActive = document.getElementById('loginForm').classList.contains('active');
+            if (loginActive) handleLogin(); else handleSignup();
+        });
+    </script>
+</body>
+</html>

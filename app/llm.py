@@ -26,6 +26,9 @@ from .model import ForecastModel
 DATA_PATH = "data/Finalized_Data.xlsx"
 try:
     df = pd.read_excel(DATA_PATH)
+except FileNotFoundError:
+    print("[WARNING] Data file not found at data/Finalized_Data.xlsx")
+    df = pd.DataFrame()
 except Exception:
     df = pd.DataFrame()
 
