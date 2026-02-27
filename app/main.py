@@ -234,8 +234,113 @@ async def update_financial(fin_data: FinancialUpdate):
         print(f"Error updating financial profile: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/recommend")
+async def recommend_properties(user_id: str, limit: int = 5):
+    """Get recommended properties based on user preferences"""
+    try:
+        if not sb:
+            return {
+                "success": False,
+                "message": "Supabase not configured",
+                "data": []
+            }
+        
+        # Load user preferences
+        prefs_result = sb.table('user_preferences').select('*').eq('user_id', user_id).order('updated_at', desc=True).limit(1).execute()
+        
+        if not prefs_result.data or len(prefs_result.data) == 0:
+            print(f"No preferences found for user {user_id}")
+            return {
+                "success": False,
+                "message": "No preferences found for this user",
+                "data": []
+            }
+        
+        prefs = prefs_result.data[0]
+        print(f"User preferences: {prefs}")
+        
+        # Build properties query
+        query = sb.table('properties').select(
+            'property_id, property_type, property_class, city, district, location, region'
+        )
+        
+        # Apply filters based on preferences
+        if prefs.get('city'):
+            query = query.eq('city', prefs['city'])
+        
+        if prefs.get('districts_included') and len(prefs['districts_included']) > 0:
+            query = query.in_('district', prefs['districts_included'])
+        
+        if prefs.get('property_type'):
+            query = query.eq('property_type', prefs['property_type'])
+        
+        # Execute query and get results
+        result = query.order('property_id', desc=False).limit(limit * 2).execute()
+        properties = result.data or []
+        
+        print(f"Found {len(properties)} properties matching filters")
+        
+        # Enrich with transaction data and calculate scores
+        enriched_properties = []
+        for prop in properties:
+            try:
+                # Get latest transactions for this property
+                trans_result = sb.table('transactions').select(
+                    'transaction_id, price_sar, area_sqm, price_per_sqm, date'
+                ).eq('property_id', prop['property_id']).order('date', desc=True).limit(5).execute()
+                
+                transactions = trans_result.data or []
+                
+                # Calculate scores
+                price_per_sqm_scores = [t.get('price_per_sqm', 0) for t in transactions if t.get('price_per_sqm')]
+                avg_price_per_sqm = sum(price_per_sqm_scores) / len(price_per_sqm_scores) if price_per_sqm_scores else 0
+                
+                # Score based on price per sqm (lower is better for budget-conscious buyers)
+                # and recency of transactions
+                score = 0
+                if transactions:
+                    # Recent transactions = good liquidity
+                    most_recent = transactions[0]
+                    # Simple scoring: lower price_per_sqm = higher score
+                    score = 1000 / (avg_price_per_sqm + 1)  # Avoid division by zero
+                
+                enriched_properties.append({
+                    **prop,
+                    'transactions': transactions,
+                    'avg_price_per_sqm': avg_price_per_sqm,
+                    'score': score
+                })
+            except Exception as e:
+                print(f"Error enriching property {prop['property_id']}: {e}")
+                enriched_properties.append({
+                    **prop,
+                    'transactions': [],
+                    'avg_price_per_sqm': 0,
+                    'score': 0
+                })
+        
+        # Sort by score (highest first) and limit to requested count
+        top_properties = sorted(enriched_properties, key=lambda x: x['score'], reverse=True)[:limit]
+        
+        print(f"Returning {len(top_properties)} top properties")
+        
+        return {
+            "success": True,
+            "message": f"Found {len(top_properties)} recommended properties",
+            "data": top_properties,
+            "preferences": prefs
+        }
+    
+    except Exception as e:
+        print(f"Error fetching recommendations: {e}")
+        return {
+            "success": False,
+            "message": str(e),
+            "data": []
+        }
+
 @app.post("/recommend")
-def recommend_properties(prefs: UserPrefs):
+def recommend_properties_legacy(prefs: UserPrefs):
     """Get property recommendations based on user preferences"""
     try:
         # For now, return empty list since data file is missing

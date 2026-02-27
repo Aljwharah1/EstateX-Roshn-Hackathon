@@ -1060,50 +1060,36 @@
     }
   }
   async function loadPropertiesForUser() {
-    if (!currentPrefs) return [];
+    if (!currentUser?.id) {
+      console.warn('No current user');
+      return [];
+    }
     
     try {
-      let query = sb
-        .from('properties')
-        .select(`
-          property_id,
-          property_type,
-          property_class,
-          city,
-          district,
-          location,
-          region,
-          transactions (
-            transaction_id,
-            price_sar,
-            area_sqm,
-            price_per_sqm,
-            date
-          )
-        `);
-
-      // Filter by city
-      if (currentPrefs.city) {
-        query = query.eq('city', currentPrefs.city);
-      }
-
-      // Filter by included districts
-      if (currentPrefs.districts_included && currentPrefs.districts_included.length > 0) {
-        query = query.in('district', currentPrefs.districts_included);
-      }
-
-      // Filter by property type
-      if (currentPrefs.property_type) {
-        query = query.eq('property_type', currentPrefs.property_type);
-      }
-
-      const { data, error } = await query.limit(5);
-      if (error) {
-        console.warn('Could not load properties:', error.message);
+      console.log('Fetching recommended properties for user:', currentUser.id);
+      const response = await fetch('/api/recommend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: currentUser.id,
+          limit: 5
+        })
+      });
+      
+      if (!response.ok) {
+        console.error('Property fetch failed:', response.status);
         return [];
       }
-
-      return data || [];
+      
+      const result = await response.json();
+      console.log('Recommended properties:', result);
+      
+      if (!result.success) {
+        console.warn('No recommendations:', result.message);
+        return [];
+      }
+      
+      return result.data || [];
     } catch (err) {
       console.error('Error loading properties:', err);
       return [];
@@ -1115,16 +1101,27 @@
       return 'No properties found matching your preferences yet. Let me help you find the perfect property! Would you like to update your preferences to see more options?';
     }
 
-    let message = `Great! I found ${properties.length} perfect match${properties.length !== 1 ? 'es' : ''} for you:\n\n`;
+    let message = `🎯 Great! I found ${properties.length} perfect match${properties.length !== 1 ? 'es' : ''} for you based on your preferences:\n\n`;
     properties.forEach((prop, idx) => {
       const trans = prop.transactions?.[0];
       const price = trans?.price_sar ? `${trans.price_sar} SAR` : 'Price not listed';
       const area = trans?.area_sqm ? `${trans.area_sqm} m²` : 'Area unknown';
-      message += `${idx + 1}. ${prop.property_type || 'Property'} - ${prop.district || 'Location unknown'}\n`;
-      message += `   📍 ${prop.location || ''} | 💰 ${price} | 📐 ${area}\n`;
+      const pricePerSqm = prop.avg_price_per_sqm ? `${prop.avg_price_per_sqm.toFixed(0)} SAR/m²` : 'N/A';
+      const rank = idx + 1 === 1 ? '⭐ Top Pick' : idx + 1 === 2 ? '🥈 #2' : `#${idx + 1}`;
+      
+      message += `${rank} ${prop.property_type || 'Property'} - ${prop.district || 'Location'}\n`;
+      message += `   📍 ${prop.location || 'Location unknown'}\n`;
+      message += `   💰 ${price} (${pricePerSqm})\n`;
+      message += `   📐 ${area}\n`;
+      
+      if (trans?.date) {
+        const date = new Date(trans.date).toLocaleDateString();
+        message += `   📅 Latest transaction: ${date}\n`;
+      }
+      message += '\n';
     });
 
-    message += '\n\nWould you like more details about any of these properties? Or I can help you refine your search with better preferences!';
+    message += 'Would you like more details about any of these properties? Or I can help you refine your search with better preferences!';
     return message;
   }
 
