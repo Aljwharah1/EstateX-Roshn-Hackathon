@@ -261,29 +261,47 @@ async def recommend_properties(user_id: str, limit: int = 5):
         
         # Build properties query
         query = sb.table('properties').select(
-            'property_id, property_type, property_class, city, district, location, region'
+            'property_id, property_type, property_class, city, district, location, region, bedrooms, bathrooms'
         )
         
-        # Apply filters based on preferences
+        # ---- Apply filters based on preferences ----
         if prefs.get('city'):
             query = query.eq('city', prefs['city'])
         
         if prefs.get('districts_included') and len(prefs['districts_included']) > 0:
             query = query.in_('district', prefs['districts_included'])
         
+        # Excluded districts filter (NOT IN)
+        if prefs.get('districts_excluded') and len(prefs['districts_excluded']) > 0:
+            # Note: Supabase doesn't have a direct NOT IN, so we'll filter after fetching
+            excluded_districts_filter = True
+        else:
+            excluded_districts_filter = False
+        
         if prefs.get('property_type'):
             query = query.eq('property_type', prefs['property_type'])
         
+        if prefs.get('bedrooms') and prefs['bedrooms'] > 0:
+            query = query.eq('bedrooms', prefs['bedrooms'])
+        
+        if prefs.get('bathrooms') and prefs['bathrooms'] > 0:
+            query = query.eq('bathrooms', prefs['bathrooms'])
+        
         # Execute query and get results
-        result = query.order('property_id', desc=False).limit(limit * 2).execute()
+        result = query.order('property_id', desc=False).limit(limit * 3).execute()
         properties = result.data or []
         
-        print(f"Found {len(properties)} properties matching filters")
+        print(f"Found {len(properties)} properties after initial filters")
         
-        # Enrich with transaction data and calculate scores
+        # Enrich with transaction data, apply remaining filters, and calculate scores
         enriched_properties = []
         for prop in properties:
             try:
+                # Filter out excluded districts (post-query filter)
+                if excluded_districts_filter and prop.get('district') in prefs.get('districts_excluded', []):
+                    print(f"Filtering out property {prop['property_id']}: district {prop.get('district')} is excluded")
+                    continue
+                
                 # Get latest transactions for this property
                 trans_result = sb.table('transactions').select(
                     'transaction_id, price_sar, area_sqm, price_per_sqm, date'
@@ -291,8 +309,41 @@ async def recommend_properties(user_id: str, limit: int = 5):
                 
                 transactions = trans_result.data or []
                 
+                if not transactions:
+                    print(f"Skipping property {prop['property_id']}: no transaction data")
+                    continue
+                
+                # ---- AREA FILTERING ----
+                area_sqm_str = transactions[0].get('area_sqm', '')
+                try:
+                    area_sqm = float(area_sqm_str) if area_sqm_str else None
+                except (ValueError, TypeError):
+                    area_sqm = None
+                
+                if area_sqm is None:
+                    print(f"Skipping property {prop['property_id']}: invalid area data")
+                    continue
+                
+                # Check area_min constraint
+                if prefs.get('area_min') and area_sqm < prefs['area_min']:
+                    print(f"Filtering out property {prop['property_id']}: area {area_sqm} < min {prefs['area_min']}")
+                    continue
+                
+                # Check area_max constraint
+                if prefs.get('area_max') and area_sqm > prefs['area_max']:
+                    print(f"Filtering out property {prop['property_id']}: area {area_sqm} > max {prefs['area_max']}")
+                    continue
+                
                 # Calculate scores
-                price_per_sqm_scores = [t.get('price_per_sqm', 0) for t in transactions if t.get('price_per_sqm')]
+                price_per_sqm_scores = []
+                for t in transactions:
+                    try:
+                        pps = float(t.get('price_per_sqm', 0)) if t.get('price_per_sqm') else 0
+                        if pps > 0:
+                            price_per_sqm_scores.append(pps)
+                    except (ValueError, TypeError):
+                        pass
+                
                 avg_price_per_sqm = sum(price_per_sqm_scores) / len(price_per_sqm_scores) if price_per_sqm_scores else 0
                 
                 # Score based on price per sqm (lower is better for budget-conscious buyers)
@@ -312,17 +363,12 @@ async def recommend_properties(user_id: str, limit: int = 5):
                 })
             except Exception as e:
                 print(f"Error enriching property {prop['property_id']}: {e}")
-                enriched_properties.append({
-                    **prop,
-                    'transactions': [],
-                    'avg_price_per_sqm': 0,
-                    'score': 0
-                })
+                continue
         
         # Sort by score (highest first) and limit to requested count
         top_properties = sorted(enriched_properties, key=lambda x: x['score'], reverse=True)[:limit]
         
-        print(f"Returning {len(top_properties)} top properties")
+        print(f"Returning {len(top_properties)} top properties after all filters")
         
         return {
             "success": True,
