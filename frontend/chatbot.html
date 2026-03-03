@@ -1685,81 +1685,211 @@
     const isArabic = getPreferredLanguage() === 'ar';
     
     try {
-      // Try search without property type to see what types exist in location
-      const locationOnlyFilters = { ...originalFilters, property_type: '' };
+      // Try search without restricting filters to see what exists in location
+      const locationOnlyFilters = { 
+        city: originalFilters.city,
+        // Note: removed property_type, bedrooms, bathrooms, area_min, area_max
+        // to see all available properties in location
+      };
+      
       const locationResponse = await fetch('/api/recommend', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_id: currentUser.id,
-          limit: 10,
+          limit: 50,  // Get more results for better analysis
           filters: locationOnlyFilters
         })
       });
 
+      let availableProperties = [];
       let availableTypes = [];
-      let availableDistrictCount = 0;
 
       if (locationResponse.ok) {
         const locationResult = await locationResponse.json();
         if (locationResult.success && locationResult.data?.length > 0) {
-          // Extract available property types
-          availableTypes = [...new Set(locationResult.data.map(p => p.property_type))];
-          availableDistrictCount = locationResult.data.length;
-          console.log('Available types in location:', availableTypes);
+          availableProperties = locationResult.data;
+          availableTypes = [...new Set(availableProperties.map(p => p.property_type))];
+          console.log(`Found ${availableProperties.length} properties in ${originalFilters.city}:`, availableProperties);
         }
       }
 
-      // Generate recommendations based on what's available
-      let recommendation = '';
-
-      if (availableTypes.length > 0 && propertyType && !availableTypes.includes(propertyType)) {
-        // User asked for a type that doesn't exist in that location
-        const availableStr = availableTypes.join(', ');
-        const suggestedType = availableTypes[0];
-        
-        if (isArabic) {
-          recommendation = `لم أجد أي ${propertyType} في ${originalFilters.city}.\n\n✨ لكن وجدت العديد من الخيارات الأخرى:\n• أنواع متاحة: ${availableStr}\n\nهل تريد أن ترى ${suggestedType} بدلاً من ذلك؟ قل: "اعرض لي ${suggestedType} في ${originalFilters.city}"`;
-        } else {
-          recommendation = `No ${propertyType} found in ${originalFilters.city}.\n\n✨ But I found these available options:\n• Available types: ${availableStr}\n\nWould you like to see ${suggestedType} instead? Say: "Show me ${suggestedType} in ${originalFilters.city}"`;
-        }
-        return recommendation;
+      // If we found properties but they don't match the filters, analyze why
+      if (availableProperties.length > 0) {
+        return await analyzePropertyMismatch(
+          location, 
+          propertyType, 
+          originalFilters, 
+          availableProperties,
+          isArabic
+        );
       }
 
-      if (availableDistrictCount > 0 && propertyType) {
-        // Location exists but specific combination doesn't - it's bedroom/bathroom/area filters
-        const suggestedFilters = { ...originalFilters, bedrooms: 1, bathrooms: 1 };
-        
-        if (isArabic) {
-          recommendation = `لم أجد أي ${propertyType} بـ ${originalFilters.bedrooms} غرفة و${originalFilters.bathrooms} حمام في ${originalFilters.city}.\n\n💡 اقتراح: جرب تقليل متطلبات الغرف والحمامات\n• نسخة مرنة: ${propertyType} بـ غرفة واحدة وحمام واحد\n\nهل تريد هذا الخيار؟`;
-        } else {
-          recommendation = `No ${propertyType} with ${originalFilters.bedrooms} bedrooms and ${originalFilters.bathrooms} bathrooms found in ${originalFilters.city}.\n\n💡 Suggestion: Try reducing bedroom/bathroom requirements\n• Flexible option: ${propertyType} with 1 bedroom and 1 bathroom\n\nWould you like to try this?`;
-        }
-        return recommendation;
-      }
-
-      if (availableTypes.length === 0) {
-        // No properties at all in this location
-        if (isArabic) {
-          recommendation = `آسف، لا توجد عقارات متاحة في ${originalFilters.city} حالياً.\n\n💡 ماذا تريد أن تفعل؟\n1. جرب منطقة أخرى (مثلاً: نمار، الملز)\n2. اعرض لي جميع العقارات في الرياض\n3. حدّث تفضيلاتك\n\nأي من هذا تفضل؟`;
-        } else {
-          recommendation = `Sorry, there are no properties available in ${originalFilters.city} at this time.\n\n💡 What would you like to do?\n1. Try another district (e.g., Nimar, Malaz)\n2. Show me all properties in Riyadh\n3. Update your preferences\n\nWhich would you prefer?`;
-        }
-        return recommendation;
-      }
-
-      // Default message if we couldn't determine why
+      // If no properties at all in this location
       if (isArabic) {
-        return `لم أجد عقارات تطابق معايير البحث:\n• المنطقة: ${originalFilters.city}\n${propertyType ? `• النوع: ${propertyType}` : ''}\n\nجرب: تقليل متطلباتك أو اختيار منطقة مختلفة`;
+        return `آسف، لا توجد عقارات متاحة في ${originalFilters.city} حالياً.\n\n💡 ماذا تريد أن تفعل؟\n1. جرب منطقة أخرى (مثلاً: نمار، الملز)\n2. اعرض لي جميع العقارات في الرياض\n3. حدّث تفضيلاتك`;
       } else {
-        return `No properties found matching your criteria:\n• Location: ${originalFilters.city}\n${propertyType ? `• Type: ${propertyType}` : ''}\n\nTry: Reducing your requirements or choosing a different area`;
+        return `Sorry, there are no properties available in ${originalFilters.city} at this time.\n\n💡 What would you like to do?\n1. Try another district (e.g., Nimar, Malaz)\n2. Show me all properties in Riyadh\n3. Update your preferences`;
       }
     } catch (err) {
       console.error('Error generating recommendations:', err);
       if (isArabic) {
-        return `لم أجد عقارات تطابق معايير البحث. جرب تغيير المنطقة أو نوع العقار.`;
+        return `عذراً، حدث خطأ في تحليل الخيارات المتاحة.`;
       } else {
-        return `No properties found. Try changing the location or property type.`;
+        return `Sorry, there was an error analyzing available properties.`;
+      }
+    }
+  }
+
+  async function analyzePropertyMismatch(location, propertyType, userFilters, availableProperties, isArabic) {
+    try {
+      // Analyze what properties are available
+      const analysis = {
+        total: availableProperties.length,
+        types: [...new Set(availableProperties.map(p => p.property_type))],
+        bedroomRange: { min: Infinity, max: -Infinity },
+        bathroomRange: { min: Infinity, max: -Infinity },
+        areaRange: { min: Infinity, max: -Infinity },
+        priceRange: { min: Infinity, max: -Infinity },
+        avgBedrooms: 0,
+        avgBathrooms: 0,
+        avgArea: 0,
+        avgPrice: 0
+      };
+
+      let validPrices = 0;
+      let validAreas = 0;
+      let totalBeds = 0, totalBaths = 0, totalArea = 0, totalPrice = 0;
+
+      // Analyze all available properties
+      availableProperties.forEach(prop => {
+        const beds = prop.bedrooms || 0;
+        const baths = prop.bathrooms || 0;
+        analysis.bedroomRange.min = Math.min(analysis.bedroomRange.min, beds);
+        analysis.bedroomRange.max = Math.max(analysis.bedroomRange.max, beds);
+        analysis.bathroomRange.min = Math.min(analysis.bathroomRange.min, baths);
+        analysis.bathroomRange.max = Math.max(analysis.bathroomRange.max, baths);
+        totalBeds += beds;
+        totalBaths += baths;
+
+        // Analyze area from transactions
+        if (prop.transactions && prop.transactions.length > 0) {
+          const area = parseFloat(prop.transactions[0].area_sqm);
+          if (!isNaN(area)) {
+            analysis.areaRange.min = Math.min(analysis.areaRange.min, area);
+            analysis.areaRange.max = Math.max(analysis.areaRange.max, area);
+            totalArea += area;
+            validAreas++;
+          }
+
+          const price = prop.transactions[0].price_sar;
+          if (price) {
+            analysis.priceRange.min = Math.min(analysis.priceRange.min, price);
+            analysis.priceRange.max = Math.max(analysis.priceRange.max, price);
+            totalPrice += price;
+            validPrices++;
+          }
+        }
+      });
+
+      if (availableProperties.length > 0) {
+        analysis.avgBedrooms = Math.round(totalBeds / availableProperties.length);
+        analysis.avgBathrooms = Math.round(totalBaths / availableProperties.length);
+      }
+      if (validAreas > 0) analysis.avgArea = Math.round(totalArea / validAreas);
+      if (validPrices > 0) analysis.avgPrice = Math.round(totalPrice / validPrices);
+
+      console.log('Property analysis:', analysis);
+
+      // Compare with user filters and generate recommendations
+      let mismatchReasons = [];
+      let suggestions = [];
+
+      // Check property type mismatch
+      if (propertyType && !analysis.types.includes(propertyType)) {
+        const availableTypesStr = analysis.types.join(', ');
+        if (isArabic) {
+          mismatchReasons.push(`لا توجد ${propertyType} في ${location}`);
+          suggestions.push(`جرب: ${analysis.types[0]} بدلاً من ${propertyType}`);
+        } else {
+          mismatchReasons.push(`No ${propertyType} available in ${location}`);
+          suggestions.push(`Try: ${analysis.types[0]} instead of ${propertyType}`);
+        }
+      }
+
+      // Check bedroom mismatch
+      if (userFilters.bedrooms && (userFilters.bedrooms < analysis.bedroomRange.min || userFilters.bedrooms > analysis.bedroomRange.max)) {
+        if (isArabic) {
+          mismatchReasons.push(`الشقق المتاحة بها من ${analysis.bedroomRange.min}-${analysis.bedroomRange.max} غرفة (أنت تبحث عن ${userFilters.bedrooms})`);
+          suggestions.push(`جرب البحث عن ${analysis.avgBedrooms || analysis.bedroomRange.min} غرفة`);
+        } else {
+          mismatchReasons.push(`Available properties have ${analysis.bedroomRange.min}-${analysis.bedroomRange.max} bedrooms (you want ${userFilters.bedrooms})`);
+          suggestions.push(`Try searching for ${analysis.avgBedrooms || analysis.bedroomRange.min} bedrooms`);
+        }
+      }
+
+      // Check area mismatch
+      if (userFilters.area_max && analysis.areaRange.min > userFilters.area_max) {
+        if (isArabic) {
+          mismatchReasons.push(`الحد الأدنى للمساحة المتاحة هو ${analysis.areaRange.min} م² (حدك الأقصى هو ${userFilters.area_max} م²)`);
+          suggestions.push(`زد الحد الأقصى للمساحة إلى ${analysis.areaRange.min} م² أو أكثر`);
+        } else {
+          mismatchReasons.push(`Minimum available area is ${analysis.areaRange.min} m² (your max is ${userFilters.area_max} m²)`);
+          suggestions.push(`Increase your max area to ${analysis.areaRange.min} m² or more`);
+        }
+      }
+
+      // Build detailed response
+      let response = '';
+      if (isArabic) {
+        response = `✨ وجدت ${analysis.total} عقار في ${location}!\n\n`;
+        response += `📊 مميزات العقارات المتاحة:\n`;
+        response += `• أنواع: ${analysis.types.join(', ')}\n`;
+        response += `• عدد الغرف: ${analysis.bedroomRange.min}-${analysis.bedroomRange.max} (متوسط: ${analysis.avgBedrooms})\n`;
+        if (analysis.areaRange.min !== Infinity) {
+          response += `• المساحة: ${analysis.areaRange.min}-${analysis.areaRange.max} م² (متوسط: ${analysis.avgArea} م²)\n`;
+        }
+        if (analysis.priceRange.min !== Infinity) {
+          response += `• السعر: ${analysis.priceRange.min.toLocaleString()}-${analysis.priceRange.max.toLocaleString()} ريال (متوسط: ${analysis.avgPrice.toLocaleString()} ريال)\n`;
+        }
+        response += `\n⚠️ لماذا لا تطابق تفضيلاتك:\n`;
+        mismatchReasons.forEach(reason => {
+          response += `• ${reason}\n`;
+        });
+        response += `\n💡 الحل:\n`;
+        suggestions.forEach(sugg => {
+          response += `• ${sugg}\n`;
+        });
+        response += `\nهل تريد تحديث تفضيلاتك لمشاهدة هذه العقارات؟`;
+      } else {
+        response = `✨ Found ${analysis.total} properties in ${location}!\n\n`;
+        response += `📊 Available property characteristics:\n`;
+        response += `• Types: ${analysis.types.join(', ')}\n`;
+        response += `• Bedrooms: ${analysis.bedroomRange.min}-${analysis.bedroomRange.max} (avg: ${analysis.avgBedrooms})\n`;
+        if (analysis.areaRange.min !== Infinity) {
+          response += `• Area: ${analysis.areaRange.min}-${analysis.areaRange.max} m² (avg: ${analysis.avgArea} m²)\n`;
+        }
+        if (analysis.priceRange.min !== Infinity) {
+          response += `• Price: ${analysis.priceRange.min.toLocaleString()}-${analysis.priceRange.max.toLocaleString()} SAR (avg: ${analysis.avgPrice.toLocaleString()} SAR)\n`;
+        }
+        response += `\n⚠️ Why they don't match your preferences:\n`;
+        mismatchReasons.forEach(reason => {
+          response += `• ${reason}\n`;
+        });
+        response += `\n💡 To see these properties:\n`;
+        suggestions.forEach(sugg => {
+          response += `• ${sugg}\n`;
+        });
+        response += `\nWould you like to update your preferences?`;
+      }
+
+      return response;
+    } catch (err) {
+      console.error('Error in property analysis:', err);
+      if (isArabic) {
+        return `عذراً، حدث خطأ في تحليل العقارات المتاحة.`;
+      } else {
+        return `Sorry, there was an error analyzing available properties.`;
       }
     }
   }
