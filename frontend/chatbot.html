@@ -1451,6 +1451,83 @@
   }
 
   /* ============================================================
+     INTENT DETECTION & LOCATION EXTRACTION
+  ============================================================ */
+  
+  // Arabic location keywords and mappings
+  const arabicLocations = {
+    'الجنادرية': 'الجنادرية',
+    'نمار': 'نمار',
+    'الرياض': 'الرياض',
+    'جدة': 'جدة',
+    'الدمام': 'الدمام',
+    'مكة': 'مكة',
+    'المدينة': 'المدينة'
+  };
+
+  const arabicPropertyKeywords = {
+    'شقة': 'apartment',
+    'فيلا': 'villa',
+    'دار': 'house',
+    'عمارة': 'building',
+    'محل': 'shop'
+  };
+
+  const arabicSearchKeywords = ['ابحث', 'أبحث', 'ابغيت', 'ابي', 'اريد', 'أريد', 'لدي', 'في', 'عن', 'اعرض', 'اعرضلي'];
+  const englishSearchKeywords = ['search', 'find', 'show', 'looking for', 'want', 'looking', 'need', 'properties in', 'apartment', 'villa'];
+  const englishPrefsKeywords = ['preference', 'update', 'settings', 'adjust', 'change'];
+  const englishShowKeywords = ['show results', 'display', 'recommendations', 'properties'];
+  const englishHelpKeywords = ['help', 'hi', 'hello', 'hey', 'what can you do', 'assist'];
+
+  function isPropertySearchQuery(text) {
+    const lower = text.toLowerCase();
+    // Check for Arabic search keywords
+    for (let keyword of arabicSearchKeywords) {
+      if (text.includes(keyword)) return true;
+    }
+    // Check for English search keywords
+    for (let keyword of englishSearchKeywords) {
+      if (lower.includes(keyword)) return true;
+    }
+    return false;
+  }
+
+  function extractLocationFromText(text) {
+    // Check Arabic locations
+    for (let [arabicLoc, standardLoc] of Object.entries(arabicLocations)) {
+      if (text.includes(arabicLoc)) return standardLoc;
+    }
+    // Check for English location patterns
+    const patterns = [
+      /in\s+(\w+)/i,
+      /at\s+(\w+)/i,
+      /location:\s*(\w+)/i
+    ];
+    for (let pattern of patterns) {
+      const match = text.match(pattern);
+      if (match) return match[1];
+    }
+    return null;
+  }
+
+  function extractPropertyTypeFromText(text) {
+    // Check Arabic property types
+    for (let [arabicType, englishType] of Object.entries(arabicPropertyKeywords)) {
+      if (text.includes(arabicType)) return englishType;
+    }
+    // Check English property types
+    const englishTypes = ['apartment', 'apartment', 'villa', 'house', 'shop', 'studio', 'townhouse'];
+    for (let type of englishTypes) {
+      if (text.toLowerCase().includes(type)) return type;
+    }
+    return null;
+  }
+
+  function getPreferredLanguage() {
+    return currentUserRow?.preferred_language === 'ar' ? 'ar' : 'en';
+  }
+
+  /* ============================================================
      SEND MESSAGE
   ============================================================ */
   let busy = false;
@@ -1475,30 +1552,63 @@
     await saveMessage('user', text);
 
     try {
-      // Check if user is asking about preferences
       const lowerText = text.toLowerCase();
+      const isArabic = /[\u0600-\u06FF]/.test(text); // Check if text contains Arabic characters
       let reply = '';
 
-      if (lowerText.includes('preference') || lowerText.includes('update') || lowerText.includes('settings')) {
-        reply = currentUserRow?.preferred_language === 'ar'
+      // Detect intents and handle accordingly
+      if (lowerText.includes('preference') || lowerText.includes('update') || lowerText.includes('settings') || text.includes('تفضيل') || text.includes('اعدادات')) {
+        // Preferences update
+        reply = getPreferredLanguage() === 'ar'
           ? 'يمكنك تحديث تفضيلاتك من خلال الزر أعلاه. سأساعدك في العثور على أفضل العقارات بناءً على احتياجاتك.'
           : 'You can update your preferences using the Preferences button above. I\'ll help you find the best properties based on your needs. What would you like to adjust?';
       } 
-      else if (lowerText.includes('show results') || lowerText.includes('search') || lowerText.includes('find') || lowerText.includes('recommendations')) {
-        // Reload and show properties
+      else if (lowerText.includes('show results') || lowerText.includes('display properties') || text.includes('اعرض') || text.includes('النتائج')) {
+        // Show current preferences results
         const properties = await loadPropertiesForUser();
         reply = formatPropertiesMessage(properties);
       }
-      else if (lowerText.includes('help') || lowerText.includes('hi') || lowerText.includes('hello')) {
-        reply = currentUserRow?.preferred_language === 'ar'
-          ? 'أنا هنا لمساعدتك! 👋 يمكنك:\n• اسأل عن العقارات المتاحة\n• اطلب تحديث تفضيلاتك\n• اسأل عن التفاصيل\n\nما الذي تريد تحقيقه؟'
-          : 'I\'m here to help! 👋\n\nYou can:\n• Ask about available properties\n• Update your preferences\n• Request more details\n\nWhat would you like to do?';
+      else if (lowerText.includes('help') || lowerText.includes('hi') || lowerText.includes('hello') || text.includes('مساعدة') || text.includes('سلام')) {
+        // Help/greeting
+        reply = getPreferredLanguage() === 'ar'
+          ? 'أنا هنا لمساعدتك! 👋 يمكنك:\n• البحث عن عقارات (مثل: "ابحث عن شقة في الجنادرية")\n• تحديث تفضيلاتك\n• عرض النتائج\n\nبماذا تريد مني أن أساعدك؟'
+          : 'I\'m here to help! 👋\n\nYou can:\n• Search for properties (e.g., "find apartment in Jndriyah")\n• Update your preferences\n• View results\n\nWhat would you like help with?';
+      }
+      else if (isPropertySearchQuery(text)) {
+        // Property search query - extract location and property type
+        const location = extractLocationFromText(text);
+        const propType = extractPropertyTypeFromText(text);
+        
+        if (location || propType) {
+          if (getPreferredLanguage() === 'ar') {
+            reply = `جاري البحث عن ${propType || 'عقارات'} في ${location || 'المنطقة المختارة'}...`;
+          } else {
+            reply = `Searching for ${propType || 'properties'} in ${location || 'your preferred area'}...`;
+          }
+          addBotMessage(reply, false);
+          await saveMessage('assistant', reply);
+
+          // Now fetch properties
+          const searchReply = await searchPropertiesByLocation(location, propType);
+          typing.classList.remove('active');
+          addBotMessage(searchReply, true);
+          await saveMessage('assistant', searchReply);
+          busy = false;
+          setInputEnabled(true);
+          input.focus();
+          return;
+        } else {
+          // Search detected but couldn't extract specific info
+          reply = getPreferredLanguage() === 'ar'
+            ? 'أريد أن أساعدك في البحث! هل تستطيع أن تحدد:\n• المنطقة أو الحي (مثل: الجنادرية، نمار)\n• نوع العقار (شقة، فيلا، دار)\n\nمثال: "ابحث عن شقة في الجنادرية"'
+            : 'I\'d love to help you search! Could you please specify:\n• The location or district (e.g., Jndriyah, Nimar)\n• Property type (apartment, villa, house)\n\nExample: "Find apartment in Jndriyah"';
+        }
       }
       else {
-        // Default: ask backend or give helpful response
-        reply = currentUserRow?.preferred_language === 'ar'
-          ? `شكراً لسؤالك! "${text}"\n\nأنا هنا لمساعدتك في:\n1. عرض العقارات المتاحة (اكتب "عرض النتائج")\n2. تحديث تفضيلاتك\n3. الإجابة عن أسئلتك حول العقارات\n\nكيف يمكنني مساعدتك؟`
-          : `Thanks for asking! "${text}"\n\nI'm here to help you with:\n1. Viewing available properties (type "show results")\n2. Updating your preferences\n3. Answering questions about properties\n\nWhat would you like to do?`;
+        // Offer general help
+        reply = getPreferredLanguage() === 'ar'
+          ? `شكراً لسؤالك! 😊 \n\nيمكنني مساعدتك بـ:\n1. البحث عن عقارات (قل: "ابحث عن شقة في الجنادرية")\n2. عرض النتائج (قل: "اعرض النتائج")\n3. تحديث تفضيلاتك\n\nما الذي تريد من فضلك؟`
+          : `Thanks for asking! 😊 \n\nI can help you with:\n1. Property search (say: "Find apartment in Jndriyah")\n2. View results (say: "Show results")\n3. Update your preferences\n\nWhat would you like?`;
       }
 
       typing.classList.remove('active');
@@ -1507,13 +1617,68 @@
 
     } catch (err) {
       typing.classList.remove('active');
-      const errMsg = 'Error: ' + (err.message || 'Something went wrong.');
+      const errMsg = getPreferredLanguage() === 'ar'
+        ? 'عذراً، حدث خطأ. الرجاء المحاولة مجدداً.'
+        : 'Sorry, something went wrong. Please try again.';
       addBotMessage(errMsg, false);
       await saveMessage('assistant', errMsg);
     } finally {
       busy = false;
       setInputEnabled(true);
       input.focus();
+    }
+  }
+
+  async function searchPropertiesByLocation(location, propertyType) {
+    try {
+      // Load current preferences first
+      if (!currentPrefs) {
+        await loadPrefsAndFin(currentUser.id);
+      }
+
+      // Build search preferences - use provided location/type or fall back to user preferences
+      const searchPrefs = {
+        city: location || currentPrefs?.city || 'الرياض',
+        property_type: propertyType || currentPrefs?.property_type || '',
+        bedrooms: currentPrefs?.bedrooms ?? 2,
+        bathrooms: currentPrefs?.bathrooms ?? 2,
+        area_min: currentPrefs?.area_min ?? 0,
+        area_max: currentPrefs?.area_max ?? 500
+      };
+
+      console.log('Searching with preferences:', searchPrefs);
+
+      // Call backend API with search parameters
+      const response = await fetch('/api/recommend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: currentUser.id,
+          limit: 5,
+          filters: searchPrefs
+        })
+      });
+
+      if (!response.ok) {
+        console.error('Search failed:', response.status);
+        return getPreferredLanguage() === 'ar'
+          ? 'عذراً، حدث خطأ أثناء البحث. الرجاء المحاولة لاحقاً.'
+          : 'Sorry, there was an error searching. Please try again later.';
+      }
+
+      const result = await response.json();
+      if (!result.success || !result.data || result.data.length === 0) {
+        return getPreferredLanguage() === 'ar'
+          ? `لم أجد عقارات تطابق معايير البحث:\n• المنطقة: ${searchPrefs.city}\n${propertyType ? `• النوع: ${propertyType}` : ''}\n\nهل تريد تحديث تفضيلاتك للحصول على نتائج أكثر؟`
+          : `No properties found matching your search criteria:\n• Location: ${searchPrefs.city}\n${propertyType ? `• Type: ${propertyType}` : ''}\n\nWould you like to update your preferences for more results?`;
+      }
+
+      return formatPropertiesMessage(result.data);
+    } catch (err) {
+      console.error('Search error:', err);
+      return getPreferredLanguage() === 'ar'
+        ? 'عذراً، حدث خطأ غير متوقع. الرجاء المحاولة مجدداً.'
+        : 'Sorry, an unexpected error occurred. Please try again.';
     }
   }
 

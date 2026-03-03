@@ -96,6 +96,12 @@ class FinancialUpdate(BaseModel):
     preapproval_status: Optional[bool] = None
     investment_horizon_months: Optional[int] = None
 
+class RecommendRequest(BaseModel):
+    """Request for property recommendations"""
+    user_id: str
+    limit: Optional[int] = 5
+    filters: Optional[Dict[str, Any]] = None  # Override preferences for specific search
+
 
 # ============ Routes ============
 
@@ -235,8 +241,8 @@ async def update_financial(fin_data: FinancialUpdate):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/recommend")
-async def recommend_properties(user_id: str, limit: int = 5):
-    """Get recommended properties based on user preferences"""
+async def recommend_properties(request: RecommendRequest):
+    """Get recommended properties based on user preferences or custom filters"""
     try:
         if not sb:
             return {
@@ -245,19 +251,33 @@ async def recommend_properties(user_id: str, limit: int = 5):
                 "data": []
             }
         
-        # Load user preferences
+        user_id = request.user_id
+        limit = request.limit or 5
+        
+        # Load user preferences as base
         prefs_result = sb.table('user_preferences').select('*').eq('user_id', user_id).order('updated_at', desc=True).limit(1).execute()
         
         if not prefs_result.data or len(prefs_result.data) == 0:
             print(f"No preferences found for user {user_id}")
-            return {
-                "success": False,
-                "message": "No preferences found for this user",
-                "data": []
-            }
+            # If custom filters provided, use them even without stored preferences
+            if not request.filters:
+                return {
+                    "success": False,
+                    "message": "No preferences found for this user",
+                    "data": []
+                }
+            prefs = {}
+        else:
+            prefs = prefs_result.data[0]
         
-        prefs = prefs_result.data[0]
         print(f"User preferences: {prefs}")
+        
+        # Override preferences with custom filters if provided
+        if request.filters:
+            print(f"Overriding with custom filters: {request.filters}")
+            for key, value in request.filters.items():
+                if value is not None:
+                    prefs[key] = value
         
         # Build properties query
         query = sb.table('properties').select(
