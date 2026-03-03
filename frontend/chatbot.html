@@ -1685,11 +1685,15 @@
     const isArabic = getPreferredLanguage() === 'ar';
     
     try {
-      // Try search without restricting filters to see what exists in location
+      // Try search with relaxed filters to see what exists in location
+      // We explicitly set loose constraints to override stored preferences
       const locationOnlyFilters = { 
         city: originalFilters.city,
-        // Note: removed property_type, bedrooms, bathrooms, area_min, area_max
-        // to see all available properties in location
+        property_type: '',          // No property type restriction
+        bedrooms: 0,                // 0 means "no filter" in backend
+        bathrooms: 0,               // 0 means "no filter" in backend
+        area_min: 0,                // 0 means "no minimum"
+        area_max: 100000            // Very large max to not restrict
       };
       
       const locationResponse = await fetch('/api/recommend', {
