@@ -1470,7 +1470,7 @@
     'فيلا': 'villa',
     'دار': 'house',
     'عمارة': 'building',
-    'محل': 'shop'
+    'متجر': 'shop'
   };
 
   const arabicSearchKeywords = ['ابحث', 'أبحث', 'ابغيت', 'ابي', 'اريد', 'أريد', 'لدي', 'في', 'عن', 'اعرض', 'اعرضلي'];
@@ -1668,9 +1668,8 @@
 
       const result = await response.json();
       if (!result.success || !result.data || result.data.length === 0) {
-        return getPreferredLanguage() === 'ar'
-          ? `لم أجد عقارات تطابق معايير البحث:\n• المنطقة: ${searchPrefs.city}\n${propertyType ? `• النوع: ${propertyType}` : ''}\n\nهل تريد تحديث تفضيلاتك للحصول على نتائج أكثر؟`
-          : `No properties found matching your search criteria:\n• Location: ${searchPrefs.city}\n${propertyType ? `• Type: ${propertyType}` : ''}\n\nWould you like to update your preferences for more results?`;
+        // No results - provide intelligent suggestions
+        return await generateSmartRecommendations(location, propertyType, searchPrefs);
       }
 
       return formatPropertiesMessage(result.data);
@@ -1679,6 +1678,89 @@
       return getPreferredLanguage() === 'ar'
         ? 'عذراً، حدث خطأ غير متوقع. الرجاء المحاولة مجدداً.'
         : 'Sorry, an unexpected error occurred. Please try again.';
+    }
+  }
+
+  async function generateSmartRecommendations(location, propertyType, originalFilters) {
+    const isArabic = getPreferredLanguage() === 'ar';
+    
+    try {
+      // Try search without property type to see what types exist in location
+      const locationOnlyFilters = { ...originalFilters, property_type: '' };
+      const locationResponse = await fetch('/api/recommend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: currentUser.id,
+          limit: 10,
+          filters: locationOnlyFilters
+        })
+      });
+
+      let availableTypes = [];
+      let availableDistrictCount = 0;
+
+      if (locationResponse.ok) {
+        const locationResult = await locationResponse.json();
+        if (locationResult.success && locationResult.data?.length > 0) {
+          // Extract available property types
+          availableTypes = [...new Set(locationResult.data.map(p => p.property_type))];
+          availableDistrictCount = locationResult.data.length;
+          console.log('Available types in location:', availableTypes);
+        }
+      }
+
+      // Generate recommendations based on what's available
+      let recommendation = '';
+
+      if (availableTypes.length > 0 && propertyType && !availableTypes.includes(propertyType)) {
+        // User asked for a type that doesn't exist in that location
+        const availableStr = availableTypes.join(', ');
+        const suggestedType = availableTypes[0];
+        
+        if (isArabic) {
+          recommendation = `لم أجد أي ${propertyType} في ${originalFilters.city}.\n\n✨ لكن وجدت العديد من الخيارات الأخرى:\n• أنواع متاحة: ${availableStr}\n\nهل تريد أن ترى ${suggestedType} بدلاً من ذلك؟ قل: "اعرض لي ${suggestedType} في ${originalFilters.city}"`;
+        } else {
+          recommendation = `No ${propertyType} found in ${originalFilters.city}.\n\n✨ But I found these available options:\n• Available types: ${availableStr}\n\nWould you like to see ${suggestedType} instead? Say: "Show me ${suggestedType} in ${originalFilters.city}"`;
+        }
+        return recommendation;
+      }
+
+      if (availableDistrictCount > 0 && propertyType) {
+        // Location exists but specific combination doesn't - it's bedroom/bathroom/area filters
+        const suggestedFilters = { ...originalFilters, bedrooms: 1, bathrooms: 1 };
+        
+        if (isArabic) {
+          recommendation = `لم أجد أي ${propertyType} بـ ${originalFilters.bedrooms} غرفة و${originalFilters.bathrooms} حمام في ${originalFilters.city}.\n\n💡 اقتراح: جرب تقليل متطلبات الغرف والحمامات\n• نسخة مرنة: ${propertyType} بـ غرفة واحدة وحمام واحد\n\nهل تريد هذا الخيار؟`;
+        } else {
+          recommendation = `No ${propertyType} with ${originalFilters.bedrooms} bedrooms and ${originalFilters.bathrooms} bathrooms found in ${originalFilters.city}.\n\n💡 Suggestion: Try reducing bedroom/bathroom requirements\n• Flexible option: ${propertyType} with 1 bedroom and 1 bathroom\n\nWould you like to try this?`;
+        }
+        return recommendation;
+      }
+
+      if (availableTypes.length === 0) {
+        // No properties at all in this location
+        if (isArabic) {
+          recommendation = `آسف، لا توجد عقارات متاحة في ${originalFilters.city} حالياً.\n\n💡 ماذا تريد أن تفعل؟\n1. جرب منطقة أخرى (مثلاً: نمار، الملز)\n2. اعرض لي جميع العقارات في الرياض\n3. حدّث تفضيلاتك\n\nأي من هذا تفضل؟`;
+        } else {
+          recommendation = `Sorry, there are no properties available in ${originalFilters.city} at this time.\n\n💡 What would you like to do?\n1. Try another district (e.g., Nimar, Malaz)\n2. Show me all properties in Riyadh\n3. Update your preferences\n\nWhich would you prefer?`;
+        }
+        return recommendation;
+      }
+
+      // Default message if we couldn't determine why
+      if (isArabic) {
+        return `لم أجد عقارات تطابق معايير البحث:\n• المنطقة: ${originalFilters.city}\n${propertyType ? `• النوع: ${propertyType}` : ''}\n\nجرب: تقليل متطلباتك أو اختيار منطقة مختلفة`;
+      } else {
+        return `No properties found matching your criteria:\n• Location: ${originalFilters.city}\n${propertyType ? `• Type: ${propertyType}` : ''}\n\nTry: Reducing your requirements or choosing a different area`;
+      }
+    } catch (err) {
+      console.error('Error generating recommendations:', err);
+      if (isArabic) {
+        return `لم أجد عقارات تطابق معايير البحث. جرب تغيير المنطقة أو نوع العقار.`;
+      } else {
+        return `No properties found. Try changing the location or property type.`;
+      }
     }
   }
 
