@@ -889,6 +889,11 @@
                 const { data, error } = await sb.auth.signInWithPassword({ email, password });
                 if (error) throw error;
                 
+                // Clear any guest session data before logging in
+                sessionStorage.removeItem('isGuest');
+                sessionStorage.removeItem('guestId');
+                sessionStorage.removeItem('guestName');
+                
                 redirectToChat('Welcome back!', 'Redirecting you to your AI Advisor...');
             } catch (err) {
                 alert('Login failed: ' + (err.message || 'Unknown error'));
@@ -928,6 +933,11 @@
                 const { error: signInErr } = await sb.auth.signInWithPassword({ email, password });
                 if (signInErr) throw signInErr;
                 
+                // Clear any guest session data before logging in
+                sessionStorage.removeItem('isGuest');
+                sessionStorage.removeItem('guestId');
+                sessionStorage.removeItem('guestName');
+                
                 redirectToChat(`Welcome, ${name}!`, 'Your account has been created. Launching AI Advisor...');
             } catch (err) {
                 alert('Sign up failed: ' + (err.message || 'Unknown error'));
@@ -937,8 +947,17 @@
 
         // ----- Guest Login -----
         function handleGuest() {
-            // Guest mode - just redirect to chatbot
-            redirectToChat('Welcome, Guest!', 'Launching AI Advisor in Guest Mode...');
+            // Create a unique guest session
+            const guestId = 'guest_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            const guestName = 'Guest';
+            
+            // Store guest info in sessionStorage (will be cleared when browser closes)
+            sessionStorage.setItem('isGuest', 'true');
+            sessionStorage.setItem('guestId', guestId);
+            sessionStorage.setItem('guestName', guestName);
+            
+            // Redirect to chat
+            redirectToChat('Welcome, ' + guestName + '!', 'Launching AI Advisor in Guest Mode...');
         }
 
         // ----- Enter key support -----

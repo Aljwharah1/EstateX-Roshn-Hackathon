@@ -2010,11 +2010,36 @@
   });
 
   /* ============================================================
-     BOOT — check Supabase session on load
+     BOOT — check guest session or Supabase session on load
   ============================================================ */
   window.addEventListener('load', async () => {
     setInputEnabled(false);
 
+    // CHECK GUEST SESSION FIRST
+    const isGuest = sessionStorage.getItem('isGuest') === 'true';
+    
+    if (isGuest) {
+      // Guest mode - create fresh session without loading history
+      const guestId = sessionStorage.getItem('guestId');
+      const guestName = sessionStorage.getItem('guestName') || 'Guest';
+      currentUser = { id: guestId, is_guest: true, user_metadata: { name: guestName } };
+      
+      try {
+        conversationId = await getOrCreateConversation(currentUser.id);
+        await showWelcomeWithProperties();
+        setInputEnabled(true);
+      } catch (err) {
+        console.error('Guest session error:', err);
+        setInputEnabled(true);
+        showToast('⚠ Guest mode error, but you can still chat!', true);
+      }
+      
+      const m = document.getElementById('messages');
+      m.scrollTop = m.scrollHeight;
+      return; // Exit - don't check Supabase auth
+    }
+
+    // CHECK SUPABASE AUTH FOR LOGGED-IN USERS
     const { data: { session } } = await sb.auth.getSession();
 
     if (!session?.user) {
@@ -2031,7 +2056,7 @@
       conversationId = await getOrCreateConversation(currentUser.id);
       await loadPrefsAndFin(currentUser.id);
       
-      // Load message history first
+      // Load message history for logged-in users
       await loadMessageHistory();
       setInputEnabled(true);
     } catch (err) {
