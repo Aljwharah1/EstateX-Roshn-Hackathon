@@ -476,6 +476,22 @@
       -webkit-appearance: none;
     }
 
+    .field select[multiple] {
+      padding: 8px;
+      line-height: 1.6;
+    }
+
+    .field select[multiple] option {
+      background: var(--surface-3);
+      padding: 5px 8px;
+      margin: 2px 0;
+    }
+    
+    .field select[multiple] option:checked {
+      background: rgba(78,205,196,0.3);
+      color: var(--text);
+    }
+
     .field textarea { min-height: 60px; resize: vertical; }
 
     .field input:focus,
@@ -678,7 +694,7 @@
           </div>
           <div class="field">
             <label>Household size</label>
-            <input id="pHousehold" type="number" value="3" min="1"/>
+            <input id="pHousehold" type="number" value="3" min="1" max="10" placeholder="1-10"/>
           </div>
         </div>
 
@@ -687,19 +703,30 @@
         <div class="pref-grid">
           <div class="field">
             <label>City</label>
-            <input id="pCity" value="الرياض"/>
+            <select id="pCity" onchange="updateDistrictDropdowns()">
+              <option value="">Select a city</option>
+              <option value="الرياض">الرياض (Riyadh)</option>
+              <option value="جدة">جدة (Jeddah)</option>
+              <option value="الدمام">الدمام (Dammam)</option>
+            </select>
           </div>
           <div class="field">
             <label>Included districts</label>
-            <input id="pDistIncl" value="نمار, الجنادرية" placeholder="Comma separated"/>
+            <select id="pDistIncl" multiple size="4" style="min-height: 100px;">
+              <option value="">-- Select districts --</option>
+            </select>
+            <small style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">Hold Ctrl (or Cmd) to select multiple</small>
           </div>
           <div class="field">
             <label>Excluded districts</label>
-            <input id="pDistExcl" placeholder="Optional"/>
+            <select id="pDistExcl" multiple size="4" style="min-height: 100px;">
+              <option value="">-- Select districts --</option>
+            </select>
+            <small style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">Hold Ctrl (or Cmd) to select multiple</small>
           </div>
           <div class="field">
             <label>Max commute (minutes)</label>
-            <input id="pCommuteMax" type="number" value="35" min="0"/>
+            <input id="pCommuteMax" type="number" value="35" min="0" max="180" placeholder="0-180"/>
           </div>
         </div>
 
@@ -708,23 +735,29 @@
         <div class="pref-grid cols-3">
           <div class="field">
             <label>Property type</label>
-            <input id="pPropType" value="شقة"/>
+            <select id="pPropType">
+              <option value="">Any type</option>
+              <option value="شقة">شقة (Apartment)</option>
+              <option value="فيلا">فيلا (Villa)</option>
+              <option value="عمارة">عمارة (Building)</option>
+              <option value="متجر">متجر (Shop)</option>
+            </select>
           </div>
           <div class="field">
             <label>Bedrooms</label>
-            <input id="pBeds" type="number" value="2" min="0"/>
+            <input id="pBeds" type="number" value="2" min="1" max="6" placeholder="1-6"/>
           </div>
           <div class="field">
             <label>Bathrooms</label>
-            <input id="pBaths" type="number" value="2" min="0"/>
+            <input id="pBaths" type="number" value="2" min="1" max="6" placeholder="1-6"/>
           </div>
           <div class="field">
             <label>Area min (m²)</label>
-            <input id="pAreaMin" type="number" value="80" min="0"/>
+            <input id="pAreaMin" type="number" value="80" min="32" max="1500000" placeholder="Min: 32"/>
           </div>
           <div class="field">
             <label>Area max (m²)</label>
-            <input id="pAreaMax" type="number" value="180" min="0"/>
+            <input id="pAreaMax" type="number" value="180" min="32" max="1500000" placeholder="Max: 1,500,000"/>
           </div>
         </div>
 
@@ -733,11 +766,11 @@
         <div class="pref-grid">
           <div class="field">
             <label>Monthly ceiling (SAR)</label>
-            <input id="pMonthly" type="number" value="7000" min="0"/>
+            <input id="pMonthly" type="number" value="7000" min="0" step="500" placeholder="Budget ceiling"/>
           </div>
           <div class="field">
             <label>Down payment budget (SAR)</label>
-            <input id="pDown" type="number" value="150000" min="0"/>
+            <input id="pDown" type="number" value="150000" min="0" step="10000" placeholder="Down payment amount"/>
           </div>
           <div class="field">
             <label>Financing type</label>
@@ -763,7 +796,7 @@
           </div>
           <div class="field">
             <label>Investment horizon (months)</label>
-            <input id="pHorizon" type="number" value="24" min="0"/>
+            <input id="pHorizon" type="number" value="24" min="0" max="360" placeholder="0-360"/>
           </div>
         </div>
 
@@ -785,6 +818,13 @@
   ============================================================ */
   const SUPABASE_URL     = 'https://cjjxbemelckazykfkiai.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqanhiZW1lbGNrYXp5a2ZraWFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyNTMzNTgsImV4cCI6MjA4NjgyOTM1OH0.GvWn1IVgdAgn_kk5ZFyJB-qcn9UeQIUipG7ANVc0jfc';
+
+  // Districts organized by city
+  const districtsByCity = {
+    'الرياض': ['أم الحمام', 'إشبيلية', 'الأندلس', 'البديعة', 'التعاون', 'الجنادرية', 'الحائر', 'الحزم', 'الحمراء', 'الخالدية', 'الخزامى', 'الخليج', 'الدار البيضاء', 'الربوة', 'الربيع', 'الرمال', 'الروضة', 'الريان', 'الزهرة', 'السلام', 'السلي', 'السليمانية', 'السويدي', 'الشفا', 'الصحافة', 'الضباط', 'العارض', 'العريجاء', 'العزيزية', 'العقيق', 'العليا', 'الغدير', 'الفيحاء', 'الفيصلية', 'القادسية', 'القدس', 'القيروان', 'المحمدية', 'المدينة الصناعية الجديدة', 'المربع', 'المرجان', 'المرقب', 'المروة', 'المروج', 'المغرزات', 'الملز', 'الملقا', 'الملك سلمان', 'الملك فهد', 'المنصورة', 'المنصورية', 'المهدية', 'المونسية', 'النخيل', 'الندى', 'النرجس', 'النزهة', 'النسيم', 'النظيم', 'النفل', 'النهضة', 'الورود', 'الوزارات', 'الياسمين', 'اليرموك', 'اليمامة', 'حطين', 'ديراب', 'سلطانة', 'شبرا', 'طويق', 'طيبة', 'عرقة', 'عكاظ', 'قرطبة', 'لبن', 'منفوحة', 'نمار'],
+    'جدة': [],
+    'الدمام': []
+  };
 
   /* ============================================================
      INIT
@@ -1113,11 +1153,6 @@
       message += `   📍 ${prop.location || 'Location unknown'}\n`;
       message += `   💰 ${price} (${pricePerSqm})\n`;
       message += `   📐 ${area}\n`;
-      
-      if (trans?.date) {
-        const date = new Date(trans.date).toLocaleDateString();
-        message += `   📅 Latest transaction: ${date}\n`;
-      }
       message += '\n';
     });
 
@@ -1295,9 +1330,34 @@
     document.getElementById('pHousehold').value = currentUserRow?.household_size ?? 3;
 
     // Location
-    document.getElementById('pCity').value          = currentPrefs?.city || '';
-    document.getElementById('pDistIncl').value      = (currentPrefs?.districts_included || []).join(', ');
-    document.getElementById('pDistExcl').value      = (currentPrefs?.districts_excluded || []).join(', ');
+    const cityVal = currentPrefs?.city || '';
+    document.getElementById('pCity').value = cityVal;
+    
+    // Update district dropdowns based on selected city
+    updateDistrictDropdowns();
+    
+    // Set selected districts in the multi-select dropdowns
+    const inclDists = currentPrefs?.districts_included || [];
+    const exclDists = currentPrefs?.districts_excluded || [];
+    
+    const inclSelect = document.getElementById('pDistIncl');
+    const exclSelect = document.getElementById('pDistExcl');
+    
+    // Deselect all first
+    Array.from(inclSelect.options).forEach(opt => opt.selected = false);
+    Array.from(exclSelect.options).forEach(opt => opt.selected = false);
+    
+    // Select the ones from preferences
+    inclDists.forEach(dist => {
+      const opt = Array.from(inclSelect.options).find(o => o.value === dist);
+      if (opt) opt.selected = true;
+    });
+    
+    exclDists.forEach(dist => {
+      const opt = Array.from(exclSelect.options).find(o => o.value === dist);
+      if (opt) opt.selected = true;
+    });
+    
     document.getElementById('pCommuteMax').value    = currentPrefs?.max_commute_minutes ?? 35;
 
     // Property
@@ -1326,6 +1386,34 @@
     const row  = document.getElementById('preapRow');
     if (!row) return;
     row.style.display = (role === 'Renter' || fin === 'Cash') ? 'none' : '';
+  }
+
+  // Update district dropdowns when city changes
+  function updateDistrictDropdowns() {
+    const selectedCity = document.getElementById('pCity').value;
+    const districtOptions = districtsByCity[selectedCity] || [];
+    
+    const inclSelect = document.getElementById('pDistIncl');
+    const exclSelect = document.getElementById('pDistExcl');
+    
+    // Clear existing options (except the placeholder)
+    inclSelect.innerHTML = '<option value="">-- Select districts --</option>';
+    exclSelect.innerHTML = '<option value="">-- Select districts --</option>';
+    
+    // Add district options
+    districtOptions.forEach(district => {
+      const inclOption = document.createElement('option');
+      inclOption.value = district;
+      inclOption.textContent = district;
+      inclSelect.appendChild(inclOption);
+      
+      const exclOption = document.createElement('option');
+      exclOption.value = district;
+      exclOption.textContent = district;
+      exclSelect.appendChild(exclOption);
+    });
+    
+    console.log(`Updated districts for city: ${selectedCity}, ${districtOptions.length} districts available`);
   }
 
   // Attach dynamic hide/show to role + financing chips
@@ -1399,8 +1487,8 @@
         body: JSON.stringify({
           user_id: currentUser.id,
           city: document.getElementById('pCity').value.trim(),
-          districts_included: parseCsv(document.getElementById('pDistIncl').value),
-          districts_excluded: parseCsv(document.getElementById('pDistExcl').value),
+          districts_included: Array.from(document.getElementById('pDistIncl').selectedOptions).map(opt => opt.value),
+          districts_excluded: Array.from(document.getElementById('pDistExcl').selectedOptions).map(opt => opt.value),
           max_commute_minutes: parseInt(document.getElementById('pCommuteMax').value, 10) || 0,
           property_type: document.getElementById('pPropType').value.trim(),
           bedrooms: parseInt(document.getElementById('pBeds').value, 10) || 0,
@@ -1472,6 +1560,21 @@
     'عمارة': 'building',
     'متجر': 'shop'
   };
+
+  // Map English property types to Arabic (for database queries)
+  const englishToArabicPropertyType = {
+    'apartment': 'شقة',
+    'villa': 'فيلا',
+    'house': 'دار',
+    'building': 'عمارة',
+    'shop': 'متجر'
+  };
+
+  function convertPropertyTypeToArabic(propertyType) {
+    if (!propertyType) return '';
+    const normalizedType = propertyType.toLowerCase().trim();
+    return englishToArabicPropertyType[normalizedType] || propertyType;
+  }
 
   const arabicSearchKeywords = ['ابحث', 'أبحث', 'ابغيت', 'ابي', 'اريد', 'أريد', 'لدي', 'في', 'عن', 'اعرض', 'اعرضلي'];
   const englishSearchKeywords = ['search', 'find', 'show', 'looking for', 'want', 'looking', 'need', 'properties in', 'apartment', 'villa'];
@@ -1637,9 +1740,13 @@
       }
 
       // Build search preferences - use provided location/type or fall back to user preferences
+      // Convert English property type to Arabic if needed
+      const propTypeForDb = propertyType ? convertPropertyTypeToArabic(propertyType) : (currentPrefs?.property_type || '');
+      
       const searchPrefs = {
-        city: location || currentPrefs?.city || 'الرياض',
-        property_type: propertyType || currentPrefs?.property_type || '',
+        city: currentPrefs?.city || 'الرياض',
+        district: location,  // Pass extracted location as district, not city
+        property_type: propTypeForDb,
         bedrooms: currentPrefs?.bedrooms ?? 2,
         bathrooms: currentPrefs?.bathrooms ?? 2,
         area_min: currentPrefs?.area_min ?? 0,

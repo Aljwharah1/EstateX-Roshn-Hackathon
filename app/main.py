@@ -288,6 +288,12 @@ async def recommend_properties(request: RecommendRequest):
         if prefs.get('city'):
             query = query.eq('city', prefs['city'])
         
+        # Handle single district filter (from search query)
+        if prefs.get('district'):
+            print(f"Filtering by single district: {prefs['district']}")
+            query = query.eq('district', prefs['district'])
+        
+        # Handle multiple districts (from preferences)
         if prefs.get('districts_included') and len(prefs['districts_included']) > 0:
             query = query.in_('district', prefs['districts_included'])
         
