@@ -80,7 +80,6 @@ class PreferencesUpdate(BaseModel):
     city: Optional[str] = None
     districts_included: Optional[List[str]] = None
     districts_excluded: Optional[List[str]] = None
-    max_commute_minutes: Optional[int] = None
     property_type: Optional[str] = None
     bedrooms: Optional[int] = None
     bathrooms: Optional[int] = None

@@ -724,10 +724,6 @@
             </select>
             <small style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">Hold Ctrl (or Cmd) to select multiple</small>
           </div>
-          <div class="field">
-            <label>Max commute (minutes)</label>
-            <input id="pCommuteMax" type="number" value="35" min="0" max="180" placeholder="0-180"/>
-          </div>
         </div>
 
         <!-- PROPERTY -->
@@ -1358,8 +1354,6 @@
       if (opt) opt.selected = true;
     });
     
-    document.getElementById('pCommuteMax').value    = currentPrefs?.max_commute_minutes ?? 35;
-
     // Property
     document.getElementById('pPropType').value = currentPrefs?.property_type || '';
     document.getElementById('pBeds').value     = currentPrefs?.bedrooms ?? 2;
@@ -1489,7 +1483,6 @@
           city: document.getElementById('pCity').value.trim(),
           districts_included: Array.from(document.getElementById('pDistIncl').selectedOptions).map(opt => opt.value),
           districts_excluded: Array.from(document.getElementById('pDistExcl').selectedOptions).map(opt => opt.value),
-          max_commute_minutes: parseInt(document.getElementById('pCommuteMax').value, 10) || 0,
           property_type: document.getElementById('pPropType').value.trim(),
           bedrooms: parseInt(document.getElementById('pBeds').value, 10) || 0,
           bathrooms: parseInt(document.getElementById('pBaths').value, 10) || 0,
